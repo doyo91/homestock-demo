@@ -27,7 +27,7 @@
 		<div class="setting-row">
 			<div>
 				<strong>Pantalla inicial</strong>
-				<span>Elige qu� ver al abrir HomeStock</span>
+				<span>Elige qué ver al abrir HomeStock</span>
 			</div>
 
 			<select bind:value={defaultScreen} aria-label="Pantalla inicial">
@@ -38,15 +38,15 @@
 	</section>
 
 	<section class="group">
-		<h2>Organizaci�n</h2>
+		<h2>Organización</h2>
 
 		<a class="navigation-row" href={resolve('/settings/categories')}>
 			<div>
-				<strong>Categor�as</strong>
+				<strong>Categorías</strong>
 				<span>Organiza los tipos de producto</span>
 			</div>
 
-			<span class="chevron" aria-hidden="true">></span>
+			<span class="chevron" aria-hidden="true">›</span>
 		</a>
 
 		<a class="navigation-row" href={resolve('/settings/locations')}>
@@ -55,7 +55,7 @@
 				<span>Nevera, despensa, congelador...</span>
 			</div>
 
-			<span class="chevron" aria-hidden="true">></span>
+			<span class="chevron" aria-hidden="true">›</span>
 		</a>
 	</section>
 
@@ -65,10 +65,10 @@
 		<a class="navigation-row" href={resolve('/settings/household')}>
 			<div>
 				<strong>Casa</strong>
-				<span>Informaci�n del hogar</span>
+				<span>Información del hogar</span>
 			</div>
 
-			<span class="chevron" aria-hidden="true">></span>
+			<span class="chevron" aria-hidden="true">›</span>
 		</a>
 	</section>
 
@@ -78,7 +78,7 @@
 		<div class="setting-row">
 			<div>
 				<strong>Usuario de prueba</strong>
-				<span>Sesi�n local de desarrollo</span>
+				<span>Sesión local de desarrollo</span>
 			</div>
 		</div>
 	</section>

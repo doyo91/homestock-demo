@@ -15,9 +15,9 @@
 	let householdName = $derived(prototypeState.householdName);
 
 	function getLocationName(locationId: string | null): string {
-		if (!locationId) return 'Sin ubicaci�n';
+		if (!locationId) return 'Sin ubicación';
 		const location = getLocationById(locationId);
-		return location?.name ?? 'Sin ubicaci�n';
+		return location?.name ?? 'Sin ubicación';
 	}
 
 	let showFinishConfirmation = $state(false);
@@ -81,11 +81,11 @@
 		const added = addProductToShopping(productId);
 
 		if (!added) {
-			feedback = `${product.name} ya est� en Compra.`;
+			feedback = `${product.name} ya está en Compra.`;
 			return;
 		}
 
-		feedback = `${product.name} a�adido a Compra.`;
+		feedback = `${product.name} añadido a Compra.`;
 	}
 
 	function toggleMenu(id: string) {
@@ -136,8 +136,8 @@
 
 		feedback =
 			purchasedCount === 1
-				? 'Compra finalizada. 1 art�culo comprado.'
-				: `Compra finalizada. ${purchasedCount} art�culos comprados.`;
+				? 'Compra finalizada. 1 artículo comprado.'
+				: `Compra finalizada. ${purchasedCount} artículos comprados.`;
 	}
 
 	function cancelFinish() {
@@ -158,7 +158,7 @@
 
 		<a class="add-button" href={resolve('/shopping/add')}>
 			<span aria-hidden="true">+</span>
-			<span>A�adir</span>
+			<span>Añadir</span>
 		</a>
 	</header>
 
@@ -167,7 +167,7 @@
 			<span>{feedback}</span>
 
 			<button type="button" aria-label="Cerrar mensaje" onclick={() => (feedback = null)}>
-				�
+				×
 			</button>
 		</div>
 	{/if}
@@ -204,7 +204,7 @@
 						aria-expanded={openMenuId === item.id}
 						onclick={() => toggleMenu(item.id)}
 					>
-						?
+						⋯
 					</button>
 
 					{#if openMenuId === item.id}
@@ -227,7 +227,7 @@
 		<section class="group suggestions">
 			<div class="suggestion-heading">
 				<h2>Queda poco</h2>
-				<p>Quiz� quieras reponerlo</p>
+				<p>Quizá quieras reponerlo</p>
 			</div>
 
 			{#each lowSuggestions as item (item.id)}
@@ -237,7 +237,7 @@
 						<span>{getLocationName(item.locationId)}</span>
 					</div>
 
-					<button type="button" onclick={() => addSuggestion(item.id)}> A�adir </button>
+					<button type="button" onclick={() => addSuggestion(item.id)}> Añadir </button>
 				</div>
 			{/each}
 		</section>
@@ -253,7 +253,7 @@
 			{#each purchased as item (item.id)}
 				<div class="shopping-row purchased-row">
 					<div class="purchased-item">
-						<span class="check checked" aria-hidden="true"> V </span>
+						<span class="check checked" aria-hidden="true"> ✓ </span>
 
 						<span class="item-name">
 							{item.name}
@@ -281,13 +281,13 @@
 				aria-labelledby="finish-title"
 				aria-describedby="finish-description"
 			>
-				<h2 id="finish-title">�Finalizar compra?</h2>
+				<h2 id="finish-title">¿Finalizar compra?</h2>
 
 				<p id="finish-description">
-					Todav�a quedan
+					Todavía quedan
 					{pending.length}
-					{pending.length === 1 ? 'art�culo pendiente' : 'art�culos pendientes'}. Los pendientes
-					permanecer�n en la lista.
+					{pending.length === 1 ? 'artículo pendiente' : 'artículos pendientes'}. Los pendientes
+					permanecerán en la lista.
 				</p>
 
 				<div class="dialog-actions">

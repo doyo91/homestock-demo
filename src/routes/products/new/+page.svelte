@@ -37,7 +37,7 @@
 
 <section class="page">
 	<header class="page-header">
-		<a class="back" href={resolve('/')} aria-label="Volver al inventario"> < </a>
+		<a class="back" href={resolve('/')} aria-label="Volver al inventario"> ‹ </a>
 
 		<div>
 			<p>Inventario</p>
@@ -52,7 +52,7 @@
 			<span>{feedback}</span>
 
 			<button type="button" aria-label="Cerrar mensaje" onclick={() => (feedback = null)}>
-				�
+				×
 			</button>
 		</div>
 	{/if}

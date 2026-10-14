@@ -55,7 +55,7 @@
 			newCategoryName = '';
 			feedback = `${name} creada.`;
 		} else {
-			feedback = 'Ya existe una categor�a con ese nombre.';
+			feedback = 'Ya existe una categoría con ese nombre.';
 		}
 	}
 
@@ -97,7 +97,7 @@
 
 			feedback = previousName === name ? null : `${previousName} renombrada como ${name}.`;
 		} else {
-			feedback = 'Ya existe una categor�a con ese nombre.';
+			feedback = 'Ya existe una categoría con ese nombre.';
 		}
 	}
 
@@ -108,22 +108,22 @@
 </script>
 
 <svelte:head>
-	<title>Categor�as | HomeStock</title>
+	<title>Categorías | HomeStock</title>
 </svelte:head>
 
 <section class="page">
 	<header>
-		<a class="back" href={resolve('/settings')} aria-label="Volver a ajustes"> < </a>
+		<a class="back" href={resolve('/settings')} aria-label="Volver a ajustes"> ‹ </a>
 
 		<div>
-			<p>Organizaci�n</p>
-			<h1>Categor�as</h1>
+			<p>Organización</p>
+			<h1>Categorías</h1>
 		</div>
 
 		<button
 			class="add"
 			type="button"
-			aria-label="A�adir categor�a"
+			aria-label="Añadir categoría"
 			aria-expanded={showCreateForm}
 			onclick={openCreateForm}
 		>
@@ -138,7 +138,7 @@
 			<span>{feedback}</span>
 
 			<button type="button" aria-label="Cerrar mensaje" onclick={() => (feedback = null)}>
-				�
+				×
 			</button>
 		</div>
 	{/if}
@@ -151,7 +151,7 @@
 				createCategoryForm();
 			}}
 		>
-			<label for="new-category"> Nueva categor�a </label>
+			<label for="new-category"> Nueva categoría </label>
 
 			<input
 				id="new-category"
@@ -165,7 +165,7 @@
 				<button class="secondary-button" type="button" onclick={cancelCreate}> Cancelar </button>
 
 				<button class="primary-button" type="submit" disabled={!newCategoryName.trim()}>
-					A�adir
+					Añadir
 				</button>
 			</div>
 		</form>
@@ -181,7 +181,7 @@
 						disabled={index === 0}
 						onclick={() => moveCategoryItem(category.id, -1)}
 					>
-						
+						↑
 					</button>
 
 					<button
@@ -190,7 +190,7 @@
 						disabled={index === prototypeState.categories.length - 1}
 						onclick={() => moveCategoryItem(category.id, 1)}
 					>
-						
+						↓
 					</button>
 				</div>
 
@@ -202,7 +202,7 @@
 							saveEditing(category.id);
 						}}
 					>
-						<label class="sr-only" for={`category-${category.id}`}> Nombre de categor�a </label>
+						<label class="sr-only" for={`category-${category.id}`}> Nombre de categoría </label>
 
 						<input
 							id={`category-${category.id}`}
@@ -254,9 +254,9 @@
 
 	{#if prototypeState.categories.length === 0}
 		<div class="empty-state">
-			<p>Todav�a no hay categor�as.</p>
+			<p>Todavía no hay categorías.</p>
 
-			<button type="button" onclick={openCreateForm}> A�adir categor�a </button>
+			<button type="button" onclick={openCreateForm}> Añadir categoría </button>
 		</div>
 	{/if}
 </section>

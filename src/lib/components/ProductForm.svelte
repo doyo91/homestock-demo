@@ -83,10 +83,10 @@
 	</fieldset>
 
 	<label class="field">
-		<span>Categor�a</span>
+		<span>Categoría</span>
 
 		<select bind:value={categoryId}>
-			<option value="">Sin categor�a</option>
+			<option value="">Sin categoría</option>
 
 			{#each getActiveCategories() as category (category.id)}
 				<option value={category.id}>{category.name}</option>
@@ -95,10 +95,10 @@
 	</label>
 
 	<label class="field">
-		<span>Ubicaci�n habitual</span>
+		<span>Ubicación habitual</span>
 
 		<select bind:value={locationId}>
-			<option value="">Sin ubicaci�n</option>
+			<option value="">Sin ubicación</option>
 
 			{#each getActiveLocations() as location (location.id)}
 				<option value={location.id}>{location.name}</option>
@@ -107,14 +107,14 @@
 	</label>
 
 	<fieldset class="field">
-		<legend>Reposici�n</legend>
+		<legend>Reposición</legend>
 
 		<label class="radio-option">
 			<input type="radio" name="replenishment" value="MANUAL" bind:group={replenishmentMode} />
 
 			<span>
 				<strong>Manual</strong>
-				<small>Lo a�adir�s a Compra cuando lo necesites.</small>
+				<small>Lo añadirás a Compra cuando lo necesites.</small>
 			</span>
 		</label>
 
@@ -122,8 +122,8 @@
 			<input type="radio" name="replenishment" value="AUTOMATIC" bind:group={replenishmentMode} />
 
 			<span>
-				<strong>Autom�tica</strong>
-				<small>Se a�adir� a Compra cuando pase a No hay.</small>
+				<strong>Automática</strong>
+				<small>Se añadirá a Compra cuando pase a No hay.</small>
 			</span>
 		</label>
 	</fieldset>

@@ -45,7 +45,7 @@
 		{@render children()}
 	</main>
 
-	<nav aria-label="Navegaci�n principal">
+	<nav aria-label="Navegación principal">
 		{#each navigation as item (item.href)}
 			<a
 				href={resolve(item.href)}

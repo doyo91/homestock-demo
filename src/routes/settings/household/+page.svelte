@@ -28,7 +28,7 @@
 
 <section class="page">
 	<header>
-		<a class="back" href={resolve('/settings')} aria-label="Volver a ajustes"><</a>
+		<a class="back" href={resolve('/settings')} aria-label="Volver a ajustes">‹</a>
 
 		<div>
 			<p>Ajustes</p>
@@ -39,7 +39,7 @@
 	</header>
 
 	<section class="group">
-		<h2>Informaci�n</h2>
+		<h2>Información</h2>
 
 		<label>
 			<span>Nombre del hogar</span>
@@ -64,7 +64,7 @@
 			</div>
 		</div>
 
-		<p class="note">La gesti�n de miembros estar� disponible m�s adelante.</p>
+		<p class="note">La gestión de miembros estará disponible más adelante.</p>
 	</section>
 </section>
 

@@ -55,7 +55,7 @@
 			newLocationName = '';
 			feedback = `${name} creada.`;
 		} else {
-			feedback = 'Ya existe una ubicaci�n con ese nombre.';
+			feedback = 'Ya existe una ubicación con ese nombre.';
 		}
 	}
 
@@ -97,7 +97,7 @@
 
 			feedback = previousName === name ? null : `${previousName} renombrada como ${name}.`;
 		} else {
-			feedback = 'Ya existe una ubicaci�n con ese nombre.';
+			feedback = 'Ya existe una ubicación con ese nombre.';
 		}
 	}
 
@@ -113,17 +113,17 @@
 
 <section class="page">
 	<header>
-		<a class="back" href={resolve('/settings')} aria-label="Volver a ajustes"> < </a>
+		<a class="back" href={resolve('/settings')} aria-label="Volver a ajustes"> ‹ </a>
 
 		<div>
-			<p>Organizaci�n</p>
+			<p>Organización</p>
 			<h1>Ubicaciones</h1>
 		</div>
 
 		<button
 			class="add"
 			type="button"
-			aria-label="A�adir ubicaci�n"
+			aria-label="Añadir ubicación"
 			aria-expanded={showCreateForm}
 			onclick={openCreateForm}
 		>
@@ -131,14 +131,14 @@
 		</button>
 	</header>
 
-	<p class="description">Organiza los productos seg�n d�nde los guardas.</p>
+	<p class="description">Organiza los productos según dónde los guardas.</p>
 
 	{#if feedback}
 		<div class="feedback" role="status">
 			<span>{feedback}</span>
 
 			<button type="button" aria-label="Cerrar mensaje" onclick={() => (feedback = null)}>
-				�
+				×
 			</button>
 		</div>
 	{/if}
@@ -151,7 +151,7 @@
 				createLocationForm();
 			}}
 		>
-			<label for="new-location"> Nueva ubicaci�n </label>
+			<label for="new-location"> Nueva ubicación </label>
 
 			<input
 				id="new-location"
@@ -165,7 +165,7 @@
 				<button class="secondary-button" type="button" onclick={cancelCreate}> Cancelar </button>
 
 				<button class="primary-button" type="submit" disabled={!newLocationName.trim()}>
-					A�adir
+					Añadir
 				</button>
 			</div>
 		</form>
@@ -181,7 +181,7 @@
 						disabled={index === 0}
 						onclick={() => moveLocationItem(location.id, -1)}
 					>
-						
+						↑
 					</button>
 
 					<button
@@ -190,7 +190,7 @@
 						disabled={index === prototypeState.locations.length - 1}
 						onclick={() => moveLocationItem(location.id, 1)}
 					>
-						
+						↓
 					</button>
 				</div>
 
@@ -202,7 +202,7 @@
 							saveEditing(location.id);
 						}}
 					>
-						<label class="sr-only" for={`location-${location.id}`}> Nombre de ubicaci�n </label>
+						<label class="sr-only" for={`location-${location.id}`}> Nombre de ubicación </label>
 
 						<input
 							id={`location-${location.id}`}
@@ -254,9 +254,9 @@
 
 	{#if prototypeState.locations.length === 0}
 		<div class="empty-state">
-			<p>Todav�a no hay ubicaciones.</p>
+			<p>Todavía no hay ubicaciones.</p>
 
-			<button type="button" onclick={openCreateForm}> A�adir ubicaci�n </button>
+			<button type="button" onclick={openCreateForm}> Añadir ubicación </button>
 		</div>
 	{/if}
 </section>

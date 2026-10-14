@@ -13,15 +13,15 @@
 	const prototypeState = getPrototypeState();
 
 	function getCategoryName(categoryId: string | null): string {
-		if (!categoryId) return 'Sin categor�a';
+		if (!categoryId) return 'Sin categoría';
 		const category = getCategoryById(categoryId);
-		return category?.name ?? 'Sin categor�a';
+		return category?.name ?? 'Sin categoría';
 	}
 
 	function getLocationName(locationId: string | null): string {
-		if (!locationId) return 'Sin ubicaci�n';
+		if (!locationId) return 'Sin ubicación';
 		const location = getLocationById(locationId);
-		return location?.name ?? 'Sin ubicaci�n';
+		return location?.name ?? 'Sin ubicación';
 	}
 
 	let query = $state('');
@@ -84,7 +84,7 @@
 		const added = addProductToShopping(selectedProduct.id);
 
 		if (!added) {
-			error = `${selectedProduct.name} ya est� en Compra.`;
+			error = `${selectedProduct.name} ya está en Compra.`;
 			return;
 		}
 
@@ -101,7 +101,7 @@
 		const added = addOneOffShoppingItem(name);
 
 		if (!added) {
-			error = 'No se ha podido a�adir el art�culo.';
+			error = 'No se ha podido añadir el artículo.';
 			return;
 		}
 
@@ -132,23 +132,23 @@
 </script>
 
 <svelte:head>
-	<title>A�adir a compra | HomeStock</title>
+	<title>Añadir a compra | HomeStock</title>
 </svelte:head>
 
 <section class="page">
 	<header class="page-header">
-		<a class="back" href={resolve('/shopping')} aria-label="Volver a Compra"> < </a>
+		<a class="back" href={resolve('/shopping')} aria-label="Volver a Compra"> ‹ </a>
 
 		<div>
 			<p>Compra</p>
-			<h1>A�adir</h1>
+			<h1>Añadir</h1>
 		</div>
 
 		<div></div>
 	</header>
 
 	<div class="search">
-		<label for="product-search">�Qu� necesitas comprar?</label>
+		<label for="product-search">¿Qué necesitas comprar?</label>
 
 		<input
 			id="product-search"
@@ -164,7 +164,7 @@
 		<div class="error" role="alert">
 			<span>{error}</span>
 
-			<button type="button" aria-label="Cerrar mensaje" onclick={() => (error = null)}> � </button>
+			<button type="button" aria-label="Cerrar mensaje" onclick={() => (error = null)}> × </button>
 		</div>
 	{/if}
 
@@ -176,17 +176,17 @@
 				<div>
 					<strong>{selectedProduct.name}</strong>
 					<span>
-						{getLocationName(selectedProduct.locationId)} � {getCategoryName(
+						{getLocationName(selectedProduct.locationId)} · {getCategoryName(
 							selectedProduct.categoryId
 						)}
 					</span>
 				</div>
 
-				<span class="selected-mark" aria-hidden="true">V</span>
+				<span class="selected-mark" aria-hidden="true">✓</span>
 			</div>
 
 			{#if selectedProductAlreadyInShopping}
-				<p class="already-added">Este producto ya est� en Compra.</p>
+				<p class="already-added">Este producto ya está en Compra.</p>
 			{/if}
 
 			<button
@@ -195,7 +195,7 @@
 				disabled={selectedProductAlreadyInShopping}
 				onclick={addExistingProduct}
 			>
-				{selectedProductAlreadyInShopping ? 'Ya est� en Compra' : 'A�adir a Compra'}
+				{selectedProductAlreadyInShopping ? 'Ya está en Compra' : 'Añadir a Compra'}
 			</button>
 		</section>
 	{:else if normalizedQuery.length > 0}
@@ -208,11 +208,11 @@
 						<div>
 							<strong>{product.name}</strong>
 							<span>
-								{getLocationName(product.locationId)} � {getCategoryName(product.categoryId)}
+								{getLocationName(product.locationId)} · {getCategoryName(product.categoryId)}
 							</span>
 						</div>
 
-						<span class="chevron" aria-hidden="true">></span>
+						<span class="chevron" aria-hidden="true">›</span>
 					</button>
 				{/each}
 			</section>
@@ -220,20 +220,20 @@
 
 		<section class="new-item">
 			<p class="section-label">
-				{matches.length > 0 ? 'Otra opci�n' : 'Art�culo nuevo'}
+				{matches.length > 0 ? 'Otra opción' : 'Artículo nuevo'}
 			</p>
 
 			<div class="new-item-name">
-				<span>"{query.trim()}"</span>
+				<span>“{query.trim()}”</span>
 			</div>
 
 			<button class="option" type="button" onclick={addOneOffItem}>
 				<div>
 					<strong>Solo esta compra</strong>
-					<span>No se guardar� en tu inventario.</span>
+					<span>No se guardará en tu inventario.</span>
 				</div>
 
-				<span class="chevron" aria-hidden="true">></span>
+				<span class="chevron" aria-hidden="true">›</span>
 			</button>
 
 			<button
@@ -249,17 +249,17 @@
 
 					<span>
 						{existingProductWithExactName
-							? 'Selecciona el producto existente para a�adirlo.'
-							: 'Se a�adir� al inventario como No hay.'}
+							? 'Selecciona el producto existente para añadirlo.'
+							: 'Se añadirá al inventario como No hay.'}
 					</span>
 				</div>
 
-				<span class="chevron" aria-hidden="true">></span>
+				<span class="chevron" aria-hidden="true">›</span>
 			</button>
 		</section>
 	{:else}
 		<p class="hint">
-			Escribe para buscar entre los productos de tu hogar o a�adir un art�culo nuevo.
+			Escribe para buscar entre los productos de tu hogar o añadir un artículo nuevo.
 		</p>
 	{/if}
 </section>

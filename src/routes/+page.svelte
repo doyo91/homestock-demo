@@ -91,7 +91,7 @@
 			<h1>Inventario</h1>
 		</div>
 
-		<a class="add-button" href={resolve('/products/new')} aria-label="A�adir producto">
+		<a class="add-button" href={resolve('/products/new')} aria-label="Añadir producto">
 			<span aria-hidden="true">+</span>
 		</a>
 	</header>
@@ -128,7 +128,7 @@
 	{#if filtersOpen}
 		<div class="secondary-filters">
 			<label>
-				<span>Categor�a</span>
+				<span>Categoría</span>
 
 				<select bind:value={categoryFilter}>
 					<option value="ALL">Todas</option>
@@ -142,7 +142,7 @@
 			</label>
 
 			<label>
-				<span>Ubicaci�n</span>
+				<span>Ubicación</span>
 
 				<select bind:value={locationFilter}>
 					<option value="ALL">Todas</option>
@@ -164,7 +164,7 @@
 						locationFilter = 'ALL';
 					}}
 				>
-					Limpiar categor�a y ubicaci�n
+					Limpiar categoría y ubicación
 				</button>
 			{/if}
 		</div>
@@ -196,9 +196,9 @@
 
 	{#if inventory.length === 0}
 		<div class="empty-state">
-			<p>Todav�a no tienes productos en el inventario.</p>
+			<p>Todavía no tienes productos en el inventario.</p>
 
-			<a class="empty-action" href={resolve('/products/new')}> A�adir producto </a>
+			<a class="empty-action" href={resolve('/products/new')}> Añadir producto </a>
 		</div>
 	{:else if filteredInventory.length === 0}
 		<div class="empty-state">

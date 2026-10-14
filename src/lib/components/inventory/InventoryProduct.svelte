@@ -31,15 +31,15 @@
 	}
 
 	let categoryName = $derived(() => {
-		if (!item.categoryId) return 'Sin categor�a';
+		if (!item.categoryId) return 'Sin categoría';
 		const category = getCategoryById(item.categoryId);
-		return category?.name ?? 'Sin categor�a';
+		return category?.name ?? 'Sin categoría';
 	});
 
 	let locationName = $derived(() => {
-		if (!item.locationId) return 'Sin ubicaci�n';
+		if (!item.locationId) return 'Sin ubicación';
 		const location = getLocationById(item.locationId);
-		return location?.name ?? 'Sin ubicaci�n';
+		return location?.name ?? 'Sin ubicación';
 	});
 </script>
 
@@ -47,7 +47,7 @@
 	<div class="product-header">
 		<div class="product-info">
 			<h2>{item.name}</h2>
-			<p>{locationName()} � {categoryName()}</p>
+			<p>{locationName()} · {categoryName()}</p>
 		</div>
 
 		<div class="product-actions">
@@ -67,12 +67,12 @@
 				aria-expanded={isMenuOpen}
 				onclick={() => onMenuToggle(item.id)}
 			>
-				?
+				⋯
 			</button>
 
 			{#if isMenuOpen}
 				<div class="menu">
-					<button type="button" onclick={() => onAddToShopping(item.id)}> A�adir a compra </button>
+					<button type="button" onclick={() => onAddToShopping(item.id)}> Añadir a compra </button>
 
 					<a
 						href={resolve('/products/[id]/edit', {

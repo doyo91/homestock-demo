@@ -18,6 +18,7 @@ export interface PrototypeLocation {
 }
 
 export interface PrototypeInventoryItem {
+	active: boolean;
 	id: string;
 	name: string;
 	categoryId: string | null;
@@ -75,6 +76,7 @@ export function createPrototypeSeed(): PrototypeState {
 				categoryId: categoryIdAlimentacion,
 				locationId: locationIdNevera,
 				status: 'LOW',
+				active: true,
 				replenishmentMode: 'AUTOMATIC'
 			},
 			{
@@ -83,6 +85,7 @@ export function createPrototypeSeed(): PrototypeState {
 				categoryId: categoryIdAlimentacion,
 				locationId: locationIdNevera,
 				status: 'AVAILABLE',
+				active: true,
 				replenishmentMode: 'MANUAL'
 			},
 			{
@@ -91,6 +94,7 @@ export function createPrototypeSeed(): PrototypeState {
 				categoryId: categoryIdHigiene,
 				locationId: locationIdDespensa,
 				status: 'OUT',
+				active: true,
 				replenishmentMode: 'AUTOMATIC'
 			},
 			{
@@ -99,6 +103,7 @@ export function createPrototypeSeed(): PrototypeState {
 				categoryId: categoryIdLimpieza,
 				locationId: locationIdLavadero,
 				status: 'AVAILABLE',
+				active: true,
 				replenishmentMode: 'MANUAL'
 			}
 		],

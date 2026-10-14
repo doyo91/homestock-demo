@@ -19,7 +19,13 @@ export function loadPrototypeState(): PrototypeState {
 	}
 
 	try {
-		return JSON.parse(stored) as PrototypeState;
+		const state = JSON.parse(stored) as PrototypeState;
+		// Existing demo data predates the active flag. Keep those products visible.
+		state.inventory = state.inventory.map((product) => ({
+			...product,
+			active: product.active ?? true
+		}));
+		return state;
 	} catch {
 		return createPrototypeSeed();
 	}

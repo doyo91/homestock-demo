@@ -29,7 +29,9 @@
 	let lowSuggestions = $derived(
 		prototypeState.inventory.filter(
 			(product) =>
-				product.status === 'LOW' && !shopping.some((item) => item.productId === product.id)
+				product.active &&
+				product.status === 'LOW' &&
+				!shopping.some((item) => item.productId === product.id)
 		)
 	);
 

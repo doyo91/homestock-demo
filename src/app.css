@@ -1,38 +1,94 @@
 :root {
 	font-family:
+		'Segoe UI',
 		system-ui,
 		-apple-system,
 		BlinkMacSystemFont,
-		'Segoe UI',
 		sans-serif;
-
-	color: #111;
-	background: #fff;
+	color: #243b34;
+	background: #f6f7f2;
+	font-synthesis: none;
+	--ink: #243b34;
+	--muted: #61736a;
+	--accent: #246b50;
+	--accent-soft: #e8f3ec;
+	--line: #dce5dd;
+	--surface: #ffffff;
+	--surface-soft: #f0f4ee;
+	--warning: #895900;
+	--warning-soft: #fff3d6;
+	--danger: #ac4242;
+	--danger-soft: #fceceb;
+	--shadow: 0 4px 18px rgb(36 59 52 / 5%);
 }
-
 * {
 	box-sizing: border-box;
 }
-
 body {
 	margin: 0;
-	background: #fff;
+	min-width: 320px;
+	background: #f6f7f2;
+	line-height: 1.5;
 }
-
 button,
 input,
 select,
 textarea {
 	font: inherit;
 }
-
 button,
 a {
 	-webkit-tap-highlight-color: transparent;
+	touch-action: manipulation;
 }
-
+button {
+	transition:
+		background 150ms ease,
+		color 150ms ease,
+		box-shadow 150ms ease;
+}
+button:disabled {
+	cursor: default;
+}
+a {
+	color: var(--accent);
+}
+:where(button, a, input, select, textarea):focus-visible {
+	outline: 3px solid var(--accent);
+	outline-offset: 3px;
+}
+input,
+select,
+textarea {
+	accent-color: var(--accent);
+}
+input::placeholder {
+	color: var(--muted);
+	opacity: 1;
+}
+h1,
+h2,
+p {
+	overflow-wrap: anywhere;
+}
+h1 {
+	letter-spacing: -0.045em;
+}
 .page {
 	width: min(100%, 48rem);
 	margin: 0 auto;
-	padding: 1.5rem 1rem;
+	padding: 1.75rem 1rem 2rem;
+}
+@media (min-width: 640px) {
+	.page {
+		padding: 2.5rem 2rem;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		transition: none !important;
+		animation: none !important;
+	}
 }

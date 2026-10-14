@@ -55,7 +55,7 @@
 			newLocationName = '';
 			feedback = `${name} creada.`;
 		} else {
-			feedback = 'Ya existe una ubicación con ese nombre.';
+			feedback = 'Ya existe una ubicaci�n con ese nombre.';
 		}
 	}
 
@@ -97,7 +97,7 @@
 
 			feedback = previousName === name ? null : `${previousName} renombrada como ${name}.`;
 		} else {
-			feedback = 'Ya existe una ubicación con ese nombre.';
+			feedback = 'Ya existe una ubicaci�n con ese nombre.';
 		}
 	}
 
@@ -113,17 +113,17 @@
 
 <section class="page">
 	<header>
-		<a class="back" href={resolve('/settings')} aria-label="Volver a ajustes"> ‹ </a>
+		<a class="back" href={resolve('/settings')} aria-label="Volver a ajustes"> < </a>
 
 		<div>
-			<p>Organización</p>
+			<p>Organizaci�n</p>
 			<h1>Ubicaciones</h1>
 		</div>
 
 		<button
 			class="add"
 			type="button"
-			aria-label="Añadir ubicación"
+			aria-label="A�adir ubicaci�n"
 			aria-expanded={showCreateForm}
 			onclick={openCreateForm}
 		>
@@ -131,14 +131,14 @@
 		</button>
 	</header>
 
-	<p class="description">Organiza los productos según dónde los guardas.</p>
+	<p class="description">Organiza los productos seg�n d�nde los guardas.</p>
 
 	{#if feedback}
 		<div class="feedback" role="status">
 			<span>{feedback}</span>
 
 			<button type="button" aria-label="Cerrar mensaje" onclick={() => (feedback = null)}>
-				×
+				�
 			</button>
 		</div>
 	{/if}
@@ -151,7 +151,7 @@
 				createLocationForm();
 			}}
 		>
-			<label for="new-location"> Nueva ubicación </label>
+			<label for="new-location"> Nueva ubicaci�n </label>
 
 			<input
 				id="new-location"
@@ -165,7 +165,7 @@
 				<button class="secondary-button" type="button" onclick={cancelCreate}> Cancelar </button>
 
 				<button class="primary-button" type="submit" disabled={!newLocationName.trim()}>
-					Añadir
+					A�adir
 				</button>
 			</div>
 		</form>
@@ -181,7 +181,7 @@
 						disabled={index === 0}
 						onclick={() => moveLocationItem(location.id, -1)}
 					>
-						↑
+						
 					</button>
 
 					<button
@@ -190,7 +190,7 @@
 						disabled={index === prototypeState.locations.length - 1}
 						onclick={() => moveLocationItem(location.id, 1)}
 					>
-						↓
+						
 					</button>
 				</div>
 
@@ -202,7 +202,7 @@
 							saveEditing(location.id);
 						}}
 					>
-						<label class="sr-only" for={`location-${location.id}`}> Nombre de ubicación </label>
+						<label class="sr-only" for={`location-${location.id}`}> Nombre de ubicaci�n </label>
 
 						<input
 							id={`location-${location.id}`}
@@ -254,9 +254,9 @@
 
 	{#if prototypeState.locations.length === 0}
 		<div class="empty-state">
-			<p>Todavía no hay ubicaciones.</p>
+			<p>Todav�a no hay ubicaciones.</p>
 
-			<button type="button" onclick={openCreateForm}> Añadir ubicación </button>
+			<button type="button" onclick={openCreateForm}> A�adir ubicaci�n </button>
 		</div>
 	{/if}
 </section>
@@ -276,7 +276,7 @@
 
 	header p {
 		margin: 0 0 0.15rem;
-		color: #777;
+		color: var(--muted);
 		font-size: 0.75rem;
 	}
 
@@ -290,7 +290,7 @@
 		width: 2.75rem;
 		height: 2.75rem;
 		place-items: center;
-		color: #111;
+		color: var(--ink);
 		font-size: 2rem;
 		text-decoration: none;
 	}
@@ -300,7 +300,7 @@
 		height: 2.75rem;
 		border: 0;
 		border-radius: 50%;
-		background: #111;
+		background: var(--accent);
 		color: white;
 		font-size: 1.6rem;
 		cursor: pointer;
@@ -308,7 +308,7 @@
 
 	.description {
 		margin: 0 0 1.25rem;
-		color: #666;
+		color: var(--muted);
 		font-size: 0.875rem;
 		text-align: center;
 	}
@@ -321,7 +321,7 @@
 		margin-bottom: 1rem;
 		padding: 0.75rem 0.9rem;
 		border-radius: 0.6rem;
-		background: #f3f3f3;
+		background: var(--surface-soft);
 		font-size: 0.85rem;
 	}
 
@@ -329,7 +329,7 @@
 		padding: 0;
 		border: 0;
 		background: transparent;
-		color: #666;
+		color: var(--muted);
 		font: inherit;
 		font-size: 1.25rem;
 		cursor: pointer;
@@ -355,7 +355,7 @@
 		width: 100%;
 		min-height: 2.75rem;
 		padding: 0.6rem 0.7rem;
-		border: 1px solid #ccc;
+		border: 1px solid var(--line);
 		border-radius: 0.5rem;
 		background: white;
 		font: inherit;
@@ -377,26 +377,26 @@
 	}
 
 	.secondary-button {
-		border: 1px solid #ddd;
+		border: 1px solid var(--line);
 		background: white;
-		color: #111;
+		color: var(--ink);
 	}
 
 	.primary-button {
-		border: 1px solid #111;
-		background: #111;
+		border: 1px solid var(--ink);
+		background: var(--accent);
 		color: white;
 	}
 
 	.primary-button:disabled {
-		border-color: #ddd;
-		background: #ddd;
-		color: #888;
+		border-color: var(--line);
+		background: var(--line);
+		color: var(--muted);
 		cursor: default;
 	}
 
 	.list {
-		border-top: 1px solid #eee;
+		border-top: 1px solid var(--surface-soft);
 	}
 
 	.row {
@@ -404,7 +404,7 @@
 		min-height: 4rem;
 		align-items: center;
 		gap: 0.65rem;
-		border-bottom: 1px solid #eee;
+		border-bottom: 1px solid var(--surface-soft);
 	}
 
 	.row.inactive {
@@ -426,14 +426,14 @@
 		padding: 0;
 		border: 0;
 		background: transparent;
-		color: #888;
+		color: var(--muted);
 		font: inherit;
 		font-size: 0.8rem;
 		cursor: pointer;
 	}
 
 	.order-actions button:disabled {
-		color: #ddd;
+		color: var(--line);
 		cursor: default;
 	}
 
@@ -457,7 +457,7 @@
 	}
 
 	.info span {
-		color: #777;
+		color: var(--muted);
 		font-size: 0.75rem;
 	}
 
@@ -469,7 +469,7 @@
 		padding: 0;
 		border: 0;
 		border-radius: 999px;
-		background: #ccc;
+		background: var(--line);
 		cursor: pointer;
 		transition: background 0.15s ease;
 	}
@@ -486,7 +486,7 @@
 	}
 
 	.toggle.enabled {
-		background: #111;
+		background: var(--accent);
 	}
 
 	.toggle.enabled span {
@@ -512,14 +512,14 @@
 		padding: 0;
 		border: 0;
 		background: transparent;
-		color: #666;
+		color: var(--muted);
 		font: inherit;
 		font-size: 0.75rem;
 		cursor: pointer;
 	}
 
 	.text-button.save {
-		color: #111;
+		color: var(--ink);
 		font-weight: 600;
 	}
 
@@ -530,7 +530,7 @@
 
 	.empty-state {
 		padding: 3rem 1rem;
-		color: #666;
+		color: var(--muted);
 		text-align: center;
 	}
 
@@ -541,7 +541,7 @@
 	.empty-state button {
 		border: 0;
 		background: transparent;
-		color: #111;
+		color: var(--ink);
 		font: inherit;
 		font-weight: 600;
 		cursor: pointer;

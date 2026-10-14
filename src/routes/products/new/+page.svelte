@@ -37,7 +37,7 @@
 
 <section class="page">
 	<header class="page-header">
-		<a class="back" href={resolve('/')} aria-label="Volver al inventario"> ‹ </a>
+		<a class="back" href={resolve('/')} aria-label="Volver al inventario"> < </a>
 
 		<div>
 			<p>Inventario</p>
@@ -52,7 +52,7 @@
 			<span>{feedback}</span>
 
 			<button type="button" aria-label="Cerrar mensaje" onclick={() => (feedback = null)}>
-				×
+				�
 			</button>
 		</div>
 	{/if}
@@ -75,7 +75,7 @@
 
 	.page-header p {
 		margin: 0 0 0.15rem;
-		color: #777;
+		color: var(--muted);
 		font-size: 0.75rem;
 	}
 
@@ -89,7 +89,7 @@
 		width: 2.75rem;
 		height: 2.75rem;
 		place-items: center;
-		color: #111;
+		color: var(--ink);
 		font-size: 2rem;
 		text-decoration: none;
 	}
@@ -102,7 +102,7 @@
 		margin-bottom: 1rem;
 		padding: 0.75rem 0.9rem;
 		border-radius: 0.6rem;
-		background: #f3f3f3;
+		background: var(--surface-soft);
 		font-size: 0.85rem;
 	}
 
@@ -110,7 +110,7 @@
 		padding: 0;
 		border: 0;
 		background: transparent;
-		color: #666;
+		color: var(--muted);
 		font: inherit;
 		font-size: 1.25rem;
 		cursor: pointer;

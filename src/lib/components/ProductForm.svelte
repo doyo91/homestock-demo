@@ -83,10 +83,10 @@
 	</fieldset>
 
 	<label class="field">
-		<span>Categoría</span>
+		<span>Categor�a</span>
 
 		<select bind:value={categoryId}>
-			<option value="">Sin categoría</option>
+			<option value="">Sin categor�a</option>
 
 			{#each getActiveCategories() as category (category.id)}
 				<option value={category.id}>{category.name}</option>
@@ -95,10 +95,10 @@
 	</label>
 
 	<label class="field">
-		<span>Ubicación habitual</span>
+		<span>Ubicaci�n habitual</span>
 
 		<select bind:value={locationId}>
-			<option value="">Sin ubicación</option>
+			<option value="">Sin ubicaci�n</option>
 
 			{#each getActiveLocations() as location (location.id)}
 				<option value={location.id}>{location.name}</option>
@@ -107,14 +107,14 @@
 	</label>
 
 	<fieldset class="field">
-		<legend>Reposición</legend>
+		<legend>Reposici�n</legend>
 
 		<label class="radio-option">
 			<input type="radio" name="replenishment" value="MANUAL" bind:group={replenishmentMode} />
 
 			<span>
 				<strong>Manual</strong>
-				<small>Lo añadirás a Compra cuando lo necesites.</small>
+				<small>Lo a�adir�s a Compra cuando lo necesites.</small>
 			</span>
 		</label>
 
@@ -122,8 +122,8 @@
 			<input type="radio" name="replenishment" value="AUTOMATIC" bind:group={replenishmentMode} />
 
 			<span>
-				<strong>Automática</strong>
-				<small>Se añadirá a Compra cuando pase a No hay.</small>
+				<strong>Autom�tica</strong>
+				<small>Se a�adir� a Compra cuando pase a No hay.</small>
 			</span>
 		</label>
 	</fieldset>
@@ -161,7 +161,7 @@
 		width: 100%;
 		min-height: 2.75rem;
 		padding: 0.65rem 0.75rem;
-		border: 1px solid #ccc;
+		border: 1px solid var(--line);
 		border-radius: 0.5rem;
 		background: white;
 		font: inherit;
@@ -173,7 +173,7 @@
 		gap: 0.25rem;
 		padding: 0.25rem;
 		border-radius: 0.625rem;
-		background: #f3f3f3;
+		background: var(--surface-soft);
 	}
 
 	.status-selector button {
@@ -181,13 +181,13 @@
 		border: 0;
 		border-radius: 0.45rem;
 		background: transparent;
-		color: #666;
+		color: var(--muted);
 		cursor: pointer;
 	}
 
 	.status-selector button.active {
 		background: white;
-		color: #111;
+		color: var(--ink);
 		font-weight: 600;
 		box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
 	}
@@ -215,7 +215,7 @@
 	}
 
 	.radio-option small {
-		color: #777;
+		color: var(--muted);
 		font-size: 0.8rem;
 	}
 
@@ -225,15 +225,61 @@
 		margin-top: 0.5rem;
 		border: 0;
 		border-radius: 0.65rem;
-		background: #111;
+		background: var(--accent);
 		color: white;
 		font-weight: 600;
 		cursor: pointer;
 	}
 
 	.save-button:disabled {
-		background: #ddd;
-		color: #888;
+		background: var(--line);
+		color: var(--muted);
 		cursor: default;
+	}
+
+	form {
+		padding: 1.2rem;
+		border: 1px solid var(--line);
+		border-radius: 1.25rem;
+		background: white;
+		box-shadow: var(--shadow);
+	}
+	input[type='text'],
+	select {
+		border-radius: 0.8rem;
+		min-height: 3rem;
+		background: #fcfdfb;
+	}
+	.status-selector {
+		border-radius: 0.9rem;
+	}
+	.status-selector button {
+		border-radius: 0.65rem;
+		min-height: 2.75rem;
+	}
+	.status-selector button.active {
+		background: var(--accent-soft);
+		color: var(--accent);
+	}
+	.status-selector button:nth-child(2).active {
+		background: var(--warning-soft);
+		color: var(--warning);
+	}
+	.status-selector button:nth-child(3).active {
+		background: var(--danger-soft);
+		color: var(--danger);
+	}
+	.radio-option {
+		padding: 0.85rem;
+		border: 1px solid var(--line);
+		border-radius: 0.85rem;
+		margin-top: 0.6rem;
+	}
+	.radio-option:has(input:checked) {
+		background: var(--accent-soft);
+		border-color: #9dbfa9;
+	}
+	.save-button {
+		border-radius: 0.85rem;
 	}
 </style>

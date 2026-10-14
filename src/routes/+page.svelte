@@ -91,7 +91,7 @@
 			<h1>Inventario</h1>
 		</div>
 
-		<a class="add-button" href={resolve('/products/new')} aria-label="Añadir producto">
+		<a class="add-button" href={resolve('/products/new')} aria-label="A�adir producto">
 			<span aria-hidden="true">+</span>
 		</a>
 	</header>
@@ -128,7 +128,7 @@
 	{#if filtersOpen}
 		<div class="secondary-filters">
 			<label>
-				<span>Categoría</span>
+				<span>Categor�a</span>
 
 				<select bind:value={categoryFilter}>
 					<option value="ALL">Todas</option>
@@ -142,7 +142,7 @@
 			</label>
 
 			<label>
-				<span>Ubicación</span>
+				<span>Ubicaci�n</span>
 
 				<select bind:value={locationFilter}>
 					<option value="ALL">Todas</option>
@@ -164,7 +164,7 @@
 						locationFilter = 'ALL';
 					}}
 				>
-					Limpiar categoría y ubicación
+					Limpiar categor�a y ubicaci�n
 				</button>
 			{/if}
 		</div>
@@ -196,9 +196,9 @@
 
 	{#if inventory.length === 0}
 		<div class="empty-state">
-			<p>Todavía no tienes productos en el inventario.</p>
+			<p>Todav�a no tienes productos en el inventario.</p>
 
-			<a class="empty-action" href={resolve('/products/new')}> Añadir producto </a>
+			<a class="empty-action" href={resolve('/products/new')}> A�adir producto </a>
 		</div>
 	{:else if filteredInventory.length === 0}
 		<div class="empty-state">
@@ -219,7 +219,7 @@
 
 	.household {
 		margin: 0 0 0.15rem;
-		color: #777;
+		color: var(--muted);
 		font-size: 0.875rem;
 	}
 
@@ -235,7 +235,7 @@
 		height: 2.75rem;
 		place-items: center;
 		border-radius: 50%;
-		background: #111;
+		background: var(--accent);
 		color: white;
 		font-size: 1.75rem;
 		line-height: 1;
@@ -267,10 +267,10 @@
 		min-height: 2.25rem;
 		flex: 0 0 auto;
 		padding: 0.45rem 0.75rem;
-		border: 1px solid #ddd;
+		border: 1px solid var(--line);
 		border-radius: 999px;
 		background: white;
-		color: #555;
+		color: var(--muted);
 		font: inherit;
 		font-size: 0.8rem;
 		cursor: pointer;
@@ -278,8 +278,8 @@
 
 	.status-filters button.active,
 	.filter-button.active {
-		border-color: #111;
-		background: #111;
+		border-color: var(--accent);
+		background: var(--accent);
 		color: white;
 	}
 
@@ -296,7 +296,7 @@
 		height: 1.25rem;
 		padding: 0 0.25rem;
 		border-radius: 999px;
-		background: #111;
+		background: var(--accent);
 		color: white;
 		font-size: 0.7rem;
 		font-weight: 600;
@@ -310,7 +310,7 @@
 		margin-bottom: 1.25rem;
 		padding: 1rem;
 		border-radius: 0.6rem;
-		background: #f9f9f9;
+		background: var(--surface-soft);
 	}
 
 	.secondary-filters label {
@@ -324,7 +324,7 @@
 	.secondary-filters select {
 		min-height: 2.5rem;
 		padding: 0.5rem 0.75rem;
-		border: 1px solid #ccc;
+		border: 1px solid var(--line);
 		border-radius: 0.5rem;
 		background: white;
 		font: inherit;
@@ -336,14 +336,14 @@
 		border: 0;
 		border-radius: 0.4rem;
 		background: transparent;
-		color: #666;
+		color: var(--muted);
 		font: inherit;
 		font-size: 0.8rem;
 		cursor: pointer;
 	}
 
 	.clear-secondary:hover {
-		background: #eee;
+		background: var(--surface-soft);
 	}
 
 	.results-summary {
@@ -351,7 +351,7 @@
 		align-items: center;
 		justify-content: space-between;
 		margin-bottom: 1rem;
-		color: #777;
+		color: var(--muted);
 		font-size: 0.85rem;
 	}
 
@@ -359,7 +359,7 @@
 		padding: 0;
 		border: 0;
 		background: transparent;
-		color: #111;
+		color: var(--ink);
 		font: inherit;
 		font-size: 0.85rem;
 		cursor: pointer;
@@ -379,7 +379,7 @@
 
 	.empty-state p {
 		margin: 0 0 1rem;
-		color: #777;
+		color: var(--muted);
 	}
 
 	.empty-action,
@@ -388,7 +388,7 @@
 		min-height: 2.5rem;
 		padding: 0.6rem 1.2rem;
 		border-radius: 0.6rem;
-		background: #111;
+		background: var(--accent);
 		color: white;
 		font-weight: 600;
 		text-decoration: none;
@@ -398,5 +398,73 @@
 	.empty-state button {
 		border: 0;
 		font: inherit;
+	}
+
+	.page-header {
+		margin-bottom: 1.6rem;
+	}
+	h1 {
+		font-size: 2.1rem;
+	}
+	.household {
+		color: var(--accent);
+		font-weight: 600;
+		margin-bottom: 0.3rem;
+	}
+	.add-button {
+		width: 3rem;
+		height: 3rem;
+		border-radius: 1rem;
+		box-shadow: 0 4px 12px rgb(36 107 80 / 18%);
+	}
+	.status-filters {
+		gap: 0.25rem;
+		padding: 0.25rem;
+		border-radius: 1rem;
+		background: #e9eee7;
+	}
+	.status-filters button {
+		min-height: 2.5rem;
+		border: 0;
+		background: transparent;
+		border-radius: 0.75rem;
+		color: var(--muted);
+		padding: 0.45rem 0.65rem;
+	}
+	.status-filters button.active {
+		background: white;
+		color: var(--accent);
+		font-weight: 700;
+		box-shadow: var(--shadow);
+	}
+	.filter-button {
+		min-height: 3rem;
+		border-radius: 1rem;
+	}
+	.secondary-filters {
+		border: 1px solid var(--line);
+		border-radius: 1rem;
+		background: white;
+		box-shadow: var(--shadow);
+	}
+	.results-summary {
+		margin-top: 1.25rem;
+		font-size: 0.8rem;
+	}
+	.product-list {
+		gap: 0.85rem;
+	}
+	.empty-state {
+		border: 1px dashed var(--line);
+		border-radius: 1.25rem;
+		background: white;
+	}
+	@media (max-width: 359px) {
+		.filter-toolbar {
+			flex-wrap: wrap;
+		}
+		.status-filters {
+			flex-basis: 100%;
+		}
 	}
 </style>

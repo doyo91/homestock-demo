@@ -35,10 +35,18 @@ export function resetPrototype(): void {
 	state = resetPrototypeState();
 }
 
+export function deactivateProduct(productId: string): boolean {
+	const product = getProductById(productId);
+	if (!product || !product.active) return false;
+	product.active = false;
+	persistPrototypeState();
+	return true;
+}
+
 export function changeInventoryStatus(productId: string, status: InventoryStatus): boolean {
 	const product = state.inventory.find((item) => item.id === productId);
 
-	if (!product) {
+	if (!product || !product.active) {
 		return false;
 	}
 
@@ -154,6 +162,7 @@ export function saveShoppingItemAsProduct(name: string): string | null {
 		categoryId: null,
 		locationId: null,
 		status: 'OUT',
+		active: true,
 		replenishmentMode: 'MANUAL'
 	});
 
@@ -280,6 +289,7 @@ export function createProduct(
 		categoryId: categoryId || null,
 		locationId: locationId || null,
 		status,
+		active: true,
 		replenishmentMode
 	});
 

@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { getPrototypeState, getCategoryById, getLocationById } from '$lib/prototype/state.svelte';
-	import { changeInventoryStatus, addProductToShopping } from '$lib/prototype/state.svelte';
+	import { getPrototypeState, getLocationById } from '$lib/prototype/state.svelte';
+	import {
+		changeInventoryStatus,
+		addProductToShopping,
+		deactivateProduct
+	} from '$lib/prototype/state.svelte';
 	import type { InventoryStatus } from '$lib/prototype/types';
 	import InventoryProduct from '$lib/components/inventory/InventoryProduct.svelte';
 
@@ -26,18 +30,23 @@
 		{ value: 'OUT', label: 'No hay' }
 	];
 
-	let inventory = $derived(prototypeState.inventory);
+	let inventory = $derived(prototypeState.inventory.filter((product) => product.active));
+	let categoryFilters = $derived([
+		{ id: 'ALL', name: 'Todas' },
+		...prototypeState.categories.filter((category) => category.active),
+		{ id: 'NONE', name: 'Sin categoría' }
+	]);
+	let feedback = $state('');
 
 	let filteredInventory = $derived(
 		inventory.filter((item) => {
 			const matchesStatus = statusFilter === 'ALL' || item.status === statusFilter;
 
-			const category = item.categoryId ? getCategoryById(item.categoryId) : null;
 			const location = item.locationId ? getLocationById(item.locationId) : null;
 
 			const matchesCategory =
 				categoryFilter === 'ALL' ||
-				(category && category.name === categoryFilter && category.active);
+				(categoryFilter === 'NONE' ? !item.categoryId : item.categoryId === categoryFilter);
 
 			const matchesLocation =
 				locationFilter === 'ALL' ||
@@ -47,9 +56,7 @@
 		})
 	);
 
-	let activeSecondaryFilters = $derived(
-		(categoryFilter === 'ALL' ? 0 : 1) + (locationFilter === 'ALL' ? 0 : 1)
-	);
+	let activeSecondaryFilters = $derived(locationFilter === 'ALL' ? 0 : 1);
 
 	let hasFilters = $derived(
 		statusFilter !== 'ALL' || categoryFilter !== 'ALL' || locationFilter !== 'ALL'
@@ -69,7 +76,10 @@
 	}
 
 	function handleDeactivate(id: string) {
-		console.log('Desactivar producto', id);
+		const product = inventory.find((item) => item.id === id);
+		feedback = deactivateProduct(id)
+			? `${product?.name ?? 'Producto'} desactivado.`
+			: 'No se ha podido desactivar el producto.';
 		openMenuId = null;
 	}
 
@@ -95,6 +105,21 @@
 			<span aria-hidden="true">+</span>
 		</a>
 	</header>
+
+	{#if feedback}
+		<p class="feedback" role="status">{feedback}</p>
+	{/if}
+
+	<div class="category-filters" role="group" aria-label="Filtrar por categoría">
+		{#each categoryFilters as category (category.id)}
+			<button
+				type="button"
+				class:active={categoryFilter === category.id}
+				aria-pressed={categoryFilter === category.id}
+				onclick={() => (categoryFilter = category.id)}>{category.name}</button
+			>
+		{/each}
+	</div>
 
 	<div class="filter-toolbar">
 		<div class="status-filters" aria-label="Filtrar por estado">
@@ -128,20 +153,6 @@
 	{#if filtersOpen}
 		<div class="secondary-filters">
 			<label>
-				<span>Categoría</span>
-
-				<select bind:value={categoryFilter}>
-					<option value="ALL">Todas</option>
-
-					{#each prototypeState.categories.filter((category) => category.active) as category (category.id)}
-						<option value={category.name}>
-							{category.name}
-						</option>
-					{/each}
-				</select>
-			</label>
-
-			<label>
 				<span>Ubicación</span>
 
 				<select bind:value={locationFilter}>
@@ -160,11 +171,10 @@
 					class="clear-secondary"
 					type="button"
 					onclick={() => {
-						categoryFilter = 'ALL';
 						locationFilter = 'ALL';
 					}}
 				>
-					Limpiar categoría y ubicación
+					Limpiar ubicación
 				</button>
 			{/if}
 		</div>
@@ -210,6 +220,37 @@
 </section>
 
 <style>
+	.category-filters {
+		display: flex;
+		gap: 0.5rem;
+		overflow-x: auto;
+		margin-bottom: 0.75rem;
+		padding: 0.15rem 0;
+	}
+	.category-filters button {
+		flex: 0 0 auto;
+		min-height: 2.75rem;
+		padding: 0.5rem 0.85rem;
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		background: white;
+		color: var(--muted);
+		font: inherit;
+		font-size: 0.85rem;
+		cursor: pointer;
+	}
+	.category-filters button.active {
+		border-color: var(--accent);
+		background: var(--accent-soft);
+		color: var(--accent);
+		font-weight: 700;
+	}
+	.feedback {
+		padding: 0.75rem;
+		border-radius: 0.75rem;
+		background: var(--surface-soft);
+		font-size: 0.85rem;
+	}
 	.page-header {
 		display: flex;
 		align-items: center;

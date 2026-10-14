@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
 	changeInventoryStatus,
+	deactivateProduct,
 	addProductToShopping,
 	addOneOffShoppingItem,
 	purchaseShoppingItem,
@@ -809,5 +810,36 @@ describe('prototype state - Ubicaciones', () => {
 
 			expect(result).toBe(false);
 		});
+	});
+});
+
+describe('Desactivar productos', () => {
+	beforeEach(() => resetPrototype());
+
+	it('conserva la compra pendiente y permite comprar y deshacer sin reactivar el producto', () => {
+		const state = getPrototypeState();
+		const product = state.inventory.find((item) => item.id === '3')!;
+		const shopping = state.shopping.find((item) => item.productId === product.id)!;
+		expect(deactivateProduct(product.id)).toBe(true);
+		expect(product.active).toBe(false);
+		expect(state.shopping.find((item) => item.id === shopping.id)?.status).toBe('PENDING');
+		expect(purchaseShoppingItem(shopping.id)).toBe(true);
+		expect(undoShoppingPurchase(shopping.id)).toBe(true);
+		expect(product.active).toBe(false);
+		expect(product.status).toBe('OUT');
+	});
+
+	it('impide nuevas transiciones y reposiciones automáticas de productos desactivados', () => {
+		const state = getPrototypeState();
+		expect(deactivateProduct('1')).toBe(true);
+		expect(changeInventoryStatus('1', 'OUT')).toBe(false);
+		expect(state.shopping.some((item) => item.productId === '1')).toBe(false);
+		expect(state.inventory.find((item) => item.id === '1')?.status).toBe('LOW');
+	});
+
+	it('rechaza identificadores inexistentes y desactivaciones repetidas', () => {
+		expect(deactivateProduct('missing')).toBe(false);
+		expect(deactivateProduct('1')).toBe(true);
+		expect(deactivateProduct('1')).toBe(false);
 	});
 });

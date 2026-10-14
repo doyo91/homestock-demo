@@ -46,7 +46,29 @@
 <article class="product">
 	<div class="product-header">
 		<div class="product-info">
-			<h2>{item.name}</h2>
+			<h2>
+				{item.name}
+				{#if item.replenishmentMode === 'AUTOMATIC'}
+					<span
+						class="automatic"
+						role="img"
+						aria-label="Reposición automática"
+						title="Reposición automática al pasar a No hay"
+					>
+						<svg
+							viewBox="0 0 24 24"
+							width="16"
+							height="16"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.8"
+							aria-hidden="true"
+						>
+							<path d="M20 7a9 9 0 0 0-15-2L3 7m0-5v5h5M4 17a9 9 0 0 0 15 2l2-2m0 5v-5h-5" />
+						</svg>
+					</span>
+				{/if}
+			</h2>
 			<p>{locationName()} · {categoryName()}</p>
 		</div>
 
@@ -105,6 +127,15 @@
 </article>
 
 <style>
+	.automatic {
+		display: inline-flex;
+		vertical-align: middle;
+		margin-left: 0.25rem;
+		color: var(--muted);
+	}
+	.product-info h2 {
+		overflow-wrap: anywhere;
+	}
 	.product {
 		margin-bottom: 1rem;
 		padding: 1rem;

@@ -8,6 +8,7 @@
 	} from '$lib/prototype/state.svelte';
 	import type { InventoryStatus } from '$lib/prototype/types';
 	import InventoryProduct from '$lib/components/inventory/InventoryProduct.svelte';
+	import InventoryProductPanel from '$lib/components/inventory/InventoryProductPanel.svelte';
 
 	const prototypeState = getPrototypeState();
 
@@ -18,7 +19,7 @@
 	let locationFilter = $state('ALL');
 
 	let filtersOpen = $state(false);
-	let openMenuId = $state<string | null>(null);
+	let selectedProductId = $state<string | null>(null);
 
 	const statusFilters: {
 		value: InventoryStatus | 'ALL';
@@ -37,6 +38,7 @@
 		{ id: 'NONE', name: 'Sin categoría' }
 	]);
 	let feedback = $state('');
+	let selectedProduct = $derived(inventory.find((item) => item.id === selectedProductId));
 
 	let filteredInventory = $derived(
 		inventory.filter((item) => {
@@ -63,16 +65,16 @@
 	);
 
 	function handleStatusChange(id: string, status: InventoryStatus) {
-		changeInventoryStatus(id, status);
-	}
-
-	function handleMenuToggle(id: string) {
-		openMenuId = openMenuId === id ? null : id;
+		const updated = changeInventoryStatus(id, status);
+		if (!updated) feedback = 'No se ha podido actualizar el estado.';
+		selectedProductId = null;
 	}
 
 	function handleAddToShopping(id: string) {
-		addProductToShopping(id);
-		openMenuId = null;
+		feedback = addProductToShopping(id)
+			? 'Producto añadido a Compra.'
+			: 'El producto ya está en Compra.';
+		selectedProductId = null;
 	}
 
 	function handleDeactivate(id: string) {
@@ -80,7 +82,7 @@
 		feedback = deactivateProduct(id)
 			? `${product?.name ?? 'Producto'} desactivado.`
 			: 'No se ha podido desactivar el producto.';
-		openMenuId = null;
+		selectedProductId = null;
 	}
 
 	function clearFilters() {
@@ -193,14 +195,7 @@
 
 	<div class="product-list">
 		{#each filteredInventory as item (item.id)}
-			<InventoryProduct
-				{item}
-				isMenuOpen={openMenuId === item.id}
-				onStatusChange={handleStatusChange}
-				onMenuToggle={handleMenuToggle}
-				onAddToShopping={handleAddToShopping}
-				onDeactivate={handleDeactivate}
-			/>
+			<InventoryProduct {item} onOpen={(id) => (selectedProductId = id)} />
 		{/each}
 	</div>
 
@@ -219,13 +214,26 @@
 	{/if}
 </section>
 
+{#if selectedProduct}
+	<InventoryProductPanel
+		item={selectedProduct}
+		alreadyInShopping={prototypeState.shopping.some(
+			(item) => item.productId === selectedProduct.id
+		)}
+		onStatusChange={handleStatusChange}
+		onAddToShopping={handleAddToShopping}
+		onDeactivate={handleDeactivate}
+		onClose={() => (selectedProductId = null)}
+	/>
+{/if}
+
 <style>
 	.category-filters {
 		display: flex;
 		gap: 0.5rem;
 		overflow-x: auto;
-		margin-bottom: 0.75rem;
-		padding: 0.15rem 0;
+		margin-bottom: 1rem;
+		padding: 0.2rem 0 0.75rem;
 	}
 	.category-filters button {
 		flex: 0 0 auto;

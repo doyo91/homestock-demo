@@ -28,7 +28,7 @@
 
 <section class="page">
 	<header>
-		<a class="back" href={resolve('/settings')} aria-label="Volver a ajustes">‹</a>
+		<a class="back" href={resolve('/settings')} aria-label="Volver a ajustes"><</a>
 
 		<div>
 			<p>Ajustes</p>
@@ -39,7 +39,7 @@
 	</header>
 
 	<section class="group">
-		<h2>Información</h2>
+		<h2>Informaci�n</h2>
 
 		<label>
 			<span>Nombre del hogar</span>
@@ -64,7 +64,7 @@
 			</div>
 		</div>
 
-		<p class="note">La gestión de miembros estará disponible más adelante.</p>
+		<p class="note">La gesti�n de miembros estar� disponible m�s adelante.</p>
 	</section>
 </section>
 
@@ -83,7 +83,7 @@
 
 	header p {
 		margin: 0 0 0.15rem;
-		color: #777;
+		color: var(--muted);
 		font-size: 0.75rem;
 	}
 
@@ -97,7 +97,7 @@
 		width: 2.75rem;
 		height: 2.75rem;
 		place-items: center;
-		color: #111;
+		color: var(--ink);
 		font-size: 2rem;
 		text-decoration: none;
 	}
@@ -108,7 +108,7 @@
 
 	.group h2 {
 		margin: 0 0 0.75rem;
-		color: #777;
+		color: var(--muted);
 		font-size: 0.8rem;
 		font-weight: 600;
 		letter-spacing: 0.03em;
@@ -130,14 +130,14 @@
 		width: 100%;
 		min-height: 2.75rem;
 		padding: 0.65rem 0.75rem;
-		border: 1px solid #ccc;
+		border: 1px solid var(--line);
 		border-radius: 0.5rem;
 		background: white;
 		font: inherit;
 	}
 
 	input:focus {
-		border-color: #111;
+		border-color: var(--accent);
 		outline: 2px solid transparent;
 	}
 
@@ -147,7 +147,7 @@
 		margin-top: 1rem;
 		border: 0;
 		border-radius: 0.6rem;
-		background: #111;
+		background: var(--accent);
 		color: white;
 		font: inherit;
 		font-weight: 600;
@@ -155,8 +155,8 @@
 	}
 
 	.save:disabled {
-		background: #ddd;
-		color: #888;
+		background: var(--line);
+		color: var(--muted);
 		cursor: default;
 	}
 
@@ -165,7 +165,7 @@
 		align-items: center;
 		gap: 0.75rem;
 		padding: 0.75rem 0;
-		border-bottom: 1px solid #eee;
+		border-bottom: 1px solid var(--surface-soft);
 	}
 
 	.avatar {
@@ -175,7 +175,7 @@
 		flex: 0 0 auto;
 		place-items: center;
 		border-radius: 50%;
-		background: #eee;
+		background: var(--surface-soft);
 		font-size: 0.875rem;
 		font-weight: 600;
 	}
@@ -191,13 +191,13 @@
 	}
 
 	.member-info span {
-		color: #777;
+		color: var(--muted);
 		font-size: 0.8rem;
 	}
 
 	.note {
 		margin: 0.75rem 0 0;
-		color: #777;
+		color: var(--muted);
 		font-size: 0.8rem;
 	}
 </style>

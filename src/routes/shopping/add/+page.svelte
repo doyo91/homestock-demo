@@ -13,15 +13,15 @@
 	const prototypeState = getPrototypeState();
 
 	function getCategoryName(categoryId: string | null): string {
-		if (!categoryId) return 'Sin categoría';
+		if (!categoryId) return 'Sin categor�a';
 		const category = getCategoryById(categoryId);
-		return category?.name ?? 'Sin categoría';
+		return category?.name ?? 'Sin categor�a';
 	}
 
 	function getLocationName(locationId: string | null): string {
-		if (!locationId) return 'Sin ubicación';
+		if (!locationId) return 'Sin ubicaci�n';
 		const location = getLocationById(locationId);
-		return location?.name ?? 'Sin ubicación';
+		return location?.name ?? 'Sin ubicaci�n';
 	}
 
 	let query = $state('');
@@ -84,7 +84,7 @@
 		const added = addProductToShopping(selectedProduct.id);
 
 		if (!added) {
-			error = `${selectedProduct.name} ya está en Compra.`;
+			error = `${selectedProduct.name} ya est� en Compra.`;
 			return;
 		}
 
@@ -101,7 +101,7 @@
 		const added = addOneOffShoppingItem(name);
 
 		if (!added) {
-			error = 'No se ha podido añadir el artículo.';
+			error = 'No se ha podido a�adir el art�culo.';
 			return;
 		}
 
@@ -132,23 +132,23 @@
 </script>
 
 <svelte:head>
-	<title>Añadir a compra | HomeStock</title>
+	<title>A�adir a compra | HomeStock</title>
 </svelte:head>
 
 <section class="page">
 	<header class="page-header">
-		<a class="back" href={resolve('/shopping')} aria-label="Volver a Compra"> ‹ </a>
+		<a class="back" href={resolve('/shopping')} aria-label="Volver a Compra"> < </a>
 
 		<div>
 			<p>Compra</p>
-			<h1>Añadir</h1>
+			<h1>A�adir</h1>
 		</div>
 
 		<div></div>
 	</header>
 
 	<div class="search">
-		<label for="product-search">¿Qué necesitas comprar?</label>
+		<label for="product-search">�Qu� necesitas comprar?</label>
 
 		<input
 			id="product-search"
@@ -164,7 +164,7 @@
 		<div class="error" role="alert">
 			<span>{error}</span>
 
-			<button type="button" aria-label="Cerrar mensaje" onclick={() => (error = null)}> × </button>
+			<button type="button" aria-label="Cerrar mensaje" onclick={() => (error = null)}> � </button>
 		</div>
 	{/if}
 
@@ -176,17 +176,17 @@
 				<div>
 					<strong>{selectedProduct.name}</strong>
 					<span>
-						{getLocationName(selectedProduct.locationId)} · {getCategoryName(
+						{getLocationName(selectedProduct.locationId)} � {getCategoryName(
 							selectedProduct.categoryId
 						)}
 					</span>
 				</div>
 
-				<span class="selected-mark" aria-hidden="true">✓</span>
+				<span class="selected-mark" aria-hidden="true">V</span>
 			</div>
 
 			{#if selectedProductAlreadyInShopping}
-				<p class="already-added">Este producto ya está en Compra.</p>
+				<p class="already-added">Este producto ya est� en Compra.</p>
 			{/if}
 
 			<button
@@ -195,7 +195,7 @@
 				disabled={selectedProductAlreadyInShopping}
 				onclick={addExistingProduct}
 			>
-				{selectedProductAlreadyInShopping ? 'Ya está en Compra' : 'Añadir a Compra'}
+				{selectedProductAlreadyInShopping ? 'Ya est� en Compra' : 'A�adir a Compra'}
 			</button>
 		</section>
 	{:else if normalizedQuery.length > 0}
@@ -208,11 +208,11 @@
 						<div>
 							<strong>{product.name}</strong>
 							<span>
-								{getLocationName(product.locationId)} · {getCategoryName(product.categoryId)}
+								{getLocationName(product.locationId)} � {getCategoryName(product.categoryId)}
 							</span>
 						</div>
 
-						<span class="chevron" aria-hidden="true">›</span>
+						<span class="chevron" aria-hidden="true">></span>
 					</button>
 				{/each}
 			</section>
@@ -220,20 +220,20 @@
 
 		<section class="new-item">
 			<p class="section-label">
-				{matches.length > 0 ? 'Otra opción' : 'Artículo nuevo'}
+				{matches.length > 0 ? 'Otra opci�n' : 'Art�culo nuevo'}
 			</p>
 
 			<div class="new-item-name">
-				<span>“{query.trim()}”</span>
+				<span>"{query.trim()}"</span>
 			</div>
 
 			<button class="option" type="button" onclick={addOneOffItem}>
 				<div>
 					<strong>Solo esta compra</strong>
-					<span>No se guardará en tu inventario.</span>
+					<span>No se guardar� en tu inventario.</span>
 				</div>
 
-				<span class="chevron" aria-hidden="true">›</span>
+				<span class="chevron" aria-hidden="true">></span>
 			</button>
 
 			<button
@@ -249,17 +249,17 @@
 
 					<span>
 						{existingProductWithExactName
-							? 'Selecciona el producto existente para añadirlo.'
-							: 'Se añadirá al inventario como No hay.'}
+							? 'Selecciona el producto existente para a�adirlo.'
+							: 'Se a�adir� al inventario como No hay.'}
 					</span>
 				</div>
 
-				<span class="chevron" aria-hidden="true">›</span>
+				<span class="chevron" aria-hidden="true">></span>
 			</button>
 		</section>
 	{:else}
 		<p class="hint">
-			Escribe para buscar entre los productos de tu hogar o añadir un artículo nuevo.
+			Escribe para buscar entre los productos de tu hogar o a�adir un art�culo nuevo.
 		</p>
 	{/if}
 </section>
@@ -279,7 +279,7 @@
 
 	.page-header p {
 		margin: 0 0 0.15rem;
-		color: #777;
+		color: var(--muted);
 		font-size: 0.75rem;
 	}
 
@@ -293,7 +293,7 @@
 		width: 2.75rem;
 		height: 2.75rem;
 		place-items: center;
-		color: #111;
+		color: var(--ink);
 		font-size: 2rem;
 		text-decoration: none;
 	}
@@ -313,14 +313,14 @@
 		width: 100%;
 		min-height: 3rem;
 		padding: 0.7rem 0.8rem;
-		border: 1px solid #ccc;
+		border: 1px solid var(--line);
 		border-radius: 0.6rem;
 		background: white;
 		font: inherit;
 	}
 
 	.search input:focus {
-		border-color: #111;
+		border-color: var(--accent);
 		outline: none;
 	}
 
@@ -350,7 +350,7 @@
 
 	.section-label {
 		margin: 1.5rem 0 0.5rem;
-		color: #777;
+		color: var(--muted);
 		font-size: 0.75rem;
 		font-weight: 600;
 		letter-spacing: 0.03em;
@@ -367,7 +367,7 @@
 		gap: 1rem;
 		padding: 0.75rem 0;
 		border: 0;
-		border-bottom: 1px solid #eee;
+		border-bottom: 1px solid var(--surface-soft);
 		background: transparent;
 		color: inherit;
 		font: inherit;
@@ -393,7 +393,7 @@
 	.result span,
 	.option div span,
 	.selected-product div span {
-		color: #777;
+		color: var(--muted);
 		font-size: 0.8rem;
 	}
 
@@ -405,7 +405,7 @@
 
 	.chevron {
 		flex: 0 0 auto;
-		color: #999;
+		color: var(--muted);
 		font-size: 1.5rem;
 	}
 
@@ -421,7 +421,7 @@
 		justify-content: space-between;
 		gap: 1rem;
 		padding: 0.75rem 0;
-		border-bottom: 1px solid #eee;
+		border-bottom: 1px solid var(--surface-soft);
 	}
 
 	.selected-mark {
@@ -431,14 +431,14 @@
 		flex: 0 0 auto;
 		place-items: center;
 		border-radius: 50%;
-		background: #111;
+		background: var(--accent);
 		color: white;
 		font-size: 0.8rem;
 	}
 
 	.already-added {
 		margin: 0.75rem 0 0;
-		color: #777;
+		color: var(--muted);
 		font-size: 0.8rem;
 	}
 
@@ -448,7 +448,7 @@
 		margin-top: 1.5rem;
 		border: 0;
 		border-radius: 0.65rem;
-		background: #111;
+		background: var(--accent);
 		color: white;
 		font: inherit;
 		font-weight: 600;
@@ -456,14 +456,14 @@
 	}
 
 	.primary-button:disabled {
-		background: #ddd;
-		color: #777;
+		background: var(--line);
+		color: var(--muted);
 		cursor: default;
 	}
 
 	.hint {
 		margin: 1rem 0 0;
-		color: #777;
+		color: var(--muted);
 		font-size: 0.875rem;
 		line-height: 1.5;
 	}

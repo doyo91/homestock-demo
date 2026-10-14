@@ -27,7 +27,7 @@
 		<div class="setting-row">
 			<div>
 				<strong>Pantalla inicial</strong>
-				<span>Elige qué ver al abrir HomeStock</span>
+				<span>Elige qu� ver al abrir HomeStock</span>
 			</div>
 
 			<select bind:value={defaultScreen} aria-label="Pantalla inicial">
@@ -38,15 +38,15 @@
 	</section>
 
 	<section class="group">
-		<h2>Organización</h2>
+		<h2>Organizaci�n</h2>
 
 		<a class="navigation-row" href={resolve('/settings/categories')}>
 			<div>
-				<strong>Categorías</strong>
+				<strong>Categor�as</strong>
 				<span>Organiza los tipos de producto</span>
 			</div>
 
-			<span class="chevron" aria-hidden="true">›</span>
+			<span class="chevron" aria-hidden="true">></span>
 		</a>
 
 		<a class="navigation-row" href={resolve('/settings/locations')}>
@@ -55,7 +55,7 @@
 				<span>Nevera, despensa, congelador...</span>
 			</div>
 
-			<span class="chevron" aria-hidden="true">›</span>
+			<span class="chevron" aria-hidden="true">></span>
 		</a>
 	</section>
 
@@ -65,10 +65,10 @@
 		<a class="navigation-row" href={resolve('/settings/household')}>
 			<div>
 				<strong>Casa</strong>
-				<span>Información del hogar</span>
+				<span>Informaci�n del hogar</span>
 			</div>
 
-			<span class="chevron" aria-hidden="true">›</span>
+			<span class="chevron" aria-hidden="true">></span>
 		</a>
 	</section>
 
@@ -78,7 +78,7 @@
 		<div class="setting-row">
 			<div>
 				<strong>Usuario de prueba</strong>
-				<span>Sesión local de desarrollo</span>
+				<span>Sesi�n local de desarrollo</span>
 			</div>
 		</div>
 	</section>
@@ -91,7 +91,7 @@
 
 	.household {
 		margin: 0 0 0.15rem;
-		color: #777;
+		color: var(--muted);
 		font-size: 0.875rem;
 	}
 
@@ -107,7 +107,7 @@
 
 	.group h2 {
 		margin: 0 0 0.5rem;
-		color: #777;
+		color: var(--muted);
 		font-size: 0.8rem;
 		font-weight: 600;
 		letter-spacing: 0.03em;
@@ -123,7 +123,7 @@
 		justify-content: space-between;
 		gap: 1rem;
 		padding: 0.75rem 0;
-		border-bottom: 1px solid #eee;
+		border-bottom: 1px solid var(--surface-soft);
 	}
 
 	.navigation-row {
@@ -147,14 +147,14 @@
 
 	.setting-row span,
 	.navigation-row div span {
-		color: #777;
+		color: var(--muted);
 		font-size: 0.8rem;
 	}
 
 	select {
 		max-width: 8rem;
 		padding: 0.45rem 0.6rem;
-		border: 1px solid #ddd;
+		border: 1px solid var(--line);
 		border-radius: 0.5rem;
 		background: white;
 		font: inherit;
@@ -163,8 +163,46 @@
 
 	.chevron {
 		flex: 0 0 auto;
-		color: #999;
+		color: var(--muted);
 		font-size: 1.5rem;
 		font-weight: 300;
+	}
+
+	h1 {
+		font-size: 2.1rem;
+	}
+	.household {
+		color: var(--accent);
+		font-weight: 600;
+		margin-bottom: 0.3rem;
+	}
+	.group {
+		padding: 1.1rem;
+		border: 1px solid var(--line);
+		border-radius: 1.25rem;
+		background: white;
+		box-shadow: var(--shadow);
+		margin-bottom: 1rem;
+	}
+	.group h2 {
+		color: var(--accent);
+		font-size: 0.72rem;
+		letter-spacing: 0.08em;
+		margin-bottom: 0.6rem;
+	}
+	.setting-row:last-child,
+	.navigation-row:last-child {
+		border-bottom: 0;
+	}
+	.navigation-row:hover {
+		color: var(--accent);
+	}
+	select {
+		min-height: 2.75rem;
+	}
+	@media (max-width: 359px) {
+		.setting-row {
+			flex-wrap: wrap;
+		}
 	}
 </style>

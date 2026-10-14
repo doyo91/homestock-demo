@@ -31,15 +31,15 @@
 	}
 
 	let categoryName = $derived(() => {
-		if (!item.categoryId) return 'Sin categoría';
+		if (!item.categoryId) return 'Sin categor�a';
 		const category = getCategoryById(item.categoryId);
-		return category?.name ?? 'Sin categoría';
+		return category?.name ?? 'Sin categor�a';
 	});
 
 	let locationName = $derived(() => {
-		if (!item.locationId) return 'Sin ubicación';
+		if (!item.locationId) return 'Sin ubicaci�n';
 		const location = getLocationById(item.locationId);
-		return location?.name ?? 'Sin ubicación';
+		return location?.name ?? 'Sin ubicaci�n';
 	});
 </script>
 
@@ -47,7 +47,7 @@
 	<div class="product-header">
 		<div class="product-info">
 			<h2>{item.name}</h2>
-			<p>{locationName()} · {categoryName()}</p>
+			<p>{locationName()} � {categoryName()}</p>
 		</div>
 
 		<div class="product-actions">
@@ -67,12 +67,12 @@
 				aria-expanded={isMenuOpen}
 				onclick={() => onMenuToggle(item.id)}
 			>
-				⋯
+				?
 			</button>
 
 			{#if isMenuOpen}
 				<div class="menu">
-					<button type="button" onclick={() => onAddToShopping(item.id)}> Añadir a compra </button>
+					<button type="button" onclick={() => onAddToShopping(item.id)}> A�adir a compra </button>
 
 					<a
 						href={resolve('/products/[id]/edit', {
@@ -128,7 +128,7 @@
 
 	.product-info p {
 		margin: 0;
-		color: #777;
+		color: var(--muted);
 		font-size: 0.8rem;
 	}
 
@@ -145,19 +145,19 @@
 		gap: 0.35rem;
 		padding: 0.35rem 0.6rem;
 		border-radius: 999px;
-		background: #f3f3f3;
+		background: var(--surface-soft);
 		font-size: 0.75rem;
 		font-weight: 600;
 	}
 
 	.current-status.low {
-		background: #fff8e6;
-		color: #b38b00;
+		background: var(--warning-soft);
+		color: var(--warning);
 	}
 
 	.current-status.out {
-		background: #ffe6e6;
-		color: #c00;
+		background: var(--danger-soft);
+		color: var(--danger);
 	}
 
 	.status-dot {
@@ -174,13 +174,13 @@
 		border: 0;
 		border-radius: 50%;
 		background: transparent;
-		color: #666;
+		color: var(--muted);
 		font-size: 1.25rem;
 		cursor: pointer;
 	}
 
 	.menu-button:hover {
-		background: #f3f3f3;
+		background: var(--surface-soft);
 	}
 
 	.menu {
@@ -211,15 +211,15 @@
 
 	.menu button:hover,
 	.menu a:hover {
-		background: #f3f3f3;
+		background: var(--surface-soft);
 	}
 
 	.menu button.danger {
-		color: #c00;
+		color: var(--danger);
 	}
 
 	.menu button.danger:hover {
-		background: #ffe6e6;
+		background: var(--danger-soft);
 	}
 
 	.status-selector {
@@ -231,7 +231,7 @@
 		flex: 1;
 		min-height: 2.25rem;
 		padding: 0 0.5rem;
-		border: 1px solid #ddd;
+		border: 1px solid var(--line);
 		border-radius: 0.4rem;
 		background: white;
 		font-size: 0.8rem;
@@ -239,8 +239,8 @@
 	}
 
 	.status-selector button.active {
-		border-color: #111;
-		background: #111;
+		border-color: var(--accent);
+		background: var(--accent);
 		color: white;
 	}
 
@@ -256,5 +256,93 @@
 
 	.status-selector button:not(:first-child):not(:last-child) {
 		border-radius: 0;
+	}
+
+	.product {
+		margin-bottom: 0;
+		border: 1px solid var(--line);
+		border-radius: 1.25rem;
+		padding: 1.1rem;
+		box-shadow: var(--shadow);
+	}
+	.product-info {
+		min-width: 0;
+		flex: 1;
+	}
+	.product-info h2 {
+		font-weight: 700;
+		font-size: 1.05rem;
+	}
+	.product-info p {
+		line-height: 1.5;
+	}
+	.product-actions {
+		position: relative;
+		gap: 0.2rem;
+	}
+	.current-status {
+		background: var(--accent-soft);
+		color: var(--accent);
+		padding: 0.3rem 0.55rem;
+		white-space: nowrap;
+	}
+	.menu-button {
+		width: 2.75rem;
+		height: 2.75rem;
+	}
+	.menu {
+		top: 2.8rem;
+		border: 1px solid var(--line);
+		border-radius: 0.9rem;
+		box-shadow: 0 8px 28px rgb(36 59 52 / 15%);
+	}
+	.menu button,
+	.menu a {
+		min-height: 2.75rem;
+		font-size: 0.85rem;
+	}
+	.status-selector {
+		gap: 0.3rem;
+		padding: 0.25rem;
+		border-radius: 0.85rem;
+		background: var(--surface-soft);
+	}
+	.status-selector button {
+		min-height: 2.75rem;
+		border: 0;
+		background: transparent;
+		color: var(--muted);
+		border-radius: 0.65rem;
+	}
+	.status-selector button:first-child,
+	.status-selector button:last-child,
+	.status-selector button:not(:first-child):not(:last-child) {
+		border-radius: 0.65rem;
+	}
+	.status-selector button.active {
+		background: var(--accent-soft);
+		color: var(--accent);
+		font-weight: 700;
+		box-shadow: 0 1px 3px rgb(36 59 52 / 8%);
+	}
+	.status-selector button:nth-child(2).active {
+		background: var(--warning-soft);
+		color: var(--warning);
+	}
+	.status-selector button:nth-child(3).active {
+		background: var(--danger-soft);
+		color: var(--danger);
+	}
+	@media (max-width: 380px) {
+		.product-header {
+			flex-wrap: wrap;
+		}
+		.product-info {
+			flex-basis: 100%;
+		}
+		.product-actions {
+			width: 100%;
+			justify-content: flex-end;
+		}
 	}
 </style>

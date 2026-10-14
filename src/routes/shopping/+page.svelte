@@ -15,9 +15,9 @@
 	let householdName = $derived(prototypeState.householdName);
 
 	function getLocationName(locationId: string | null): string {
-		if (!locationId) return 'Sin ubicación';
+		if (!locationId) return 'Sin ubicaci�n';
 		const location = getLocationById(locationId);
-		return location?.name ?? 'Sin ubicación';
+		return location?.name ?? 'Sin ubicaci�n';
 	}
 
 	let showFinishConfirmation = $state(false);
@@ -81,11 +81,11 @@
 		const added = addProductToShopping(productId);
 
 		if (!added) {
-			feedback = `${product.name} ya está en Compra.`;
+			feedback = `${product.name} ya est� en Compra.`;
 			return;
 		}
 
-		feedback = `${product.name} añadido a Compra.`;
+		feedback = `${product.name} a�adido a Compra.`;
 	}
 
 	function toggleMenu(id: string) {
@@ -136,8 +136,8 @@
 
 		feedback =
 			purchasedCount === 1
-				? 'Compra finalizada. 1 artículo comprado.'
-				: `Compra finalizada. ${purchasedCount} artículos comprados.`;
+				? 'Compra finalizada. 1 art�culo comprado.'
+				: `Compra finalizada. ${purchasedCount} art�culos comprados.`;
 	}
 
 	function cancelFinish() {
@@ -158,7 +158,7 @@
 
 		<a class="add-button" href={resolve('/shopping/add')}>
 			<span aria-hidden="true">+</span>
-			<span>Añadir</span>
+			<span>A�adir</span>
 		</a>
 	</header>
 
@@ -167,7 +167,7 @@
 			<span>{feedback}</span>
 
 			<button type="button" aria-label="Cerrar mensaje" onclick={() => (feedback = null)}>
-				×
+				�
 			</button>
 		</div>
 	{/if}
@@ -204,7 +204,7 @@
 						aria-expanded={openMenuId === item.id}
 						onclick={() => toggleMenu(item.id)}
 					>
-						⋯
+						?
 					</button>
 
 					{#if openMenuId === item.id}
@@ -227,7 +227,7 @@
 		<section class="group suggestions">
 			<div class="suggestion-heading">
 				<h2>Queda poco</h2>
-				<p>Quizá quieras reponerlo</p>
+				<p>Quiz� quieras reponerlo</p>
 			</div>
 
 			{#each lowSuggestions as item (item.id)}
@@ -237,7 +237,7 @@
 						<span>{getLocationName(item.locationId)}</span>
 					</div>
 
-					<button type="button" onclick={() => addSuggestion(item.id)}> Añadir </button>
+					<button type="button" onclick={() => addSuggestion(item.id)}> A�adir </button>
 				</div>
 			{/each}
 		</section>
@@ -253,7 +253,7 @@
 			{#each purchased as item (item.id)}
 				<div class="shopping-row purchased-row">
 					<div class="purchased-item">
-						<span class="check checked" aria-hidden="true"> ✓ </span>
+						<span class="check checked" aria-hidden="true"> V </span>
 
 						<span class="item-name">
 							{item.name}
@@ -281,13 +281,13 @@
 				aria-labelledby="finish-title"
 				aria-describedby="finish-description"
 			>
-				<h2 id="finish-title">¿Finalizar compra?</h2>
+				<h2 id="finish-title">�Finalizar compra?</h2>
 
 				<p id="finish-description">
-					Todavía quedan
+					Todav�a quedan
 					{pending.length}
-					{pending.length === 1 ? 'artículo pendiente' : 'artículos pendientes'}. Los pendientes
-					permanecerán en la lista.
+					{pending.length === 1 ? 'art�culo pendiente' : 'art�culos pendientes'}. Los pendientes
+					permanecer�n en la lista.
 				</p>
 
 				<div class="dialog-actions">
@@ -310,7 +310,7 @@
 
 	.household {
 		margin: 0 0 0.15rem;
-		color: #777;
+		color: var(--muted);
 		font-size: 0.875rem;
 	}
 
@@ -327,7 +327,7 @@
 		gap: 0.35rem;
 		padding: 0 0.9rem;
 		border-radius: 999px;
-		background: #111;
+		background: var(--accent);
 		color: white;
 		font-weight: 600;
 		text-decoration: none;
@@ -346,7 +346,7 @@
 		margin-bottom: 1.25rem;
 		padding: 0.75rem 0.9rem;
 		border-radius: 0.6rem;
-		background: #f3f3f3;
+		background: var(--surface-soft);
 		font-size: 0.85rem;
 	}
 
@@ -355,7 +355,7 @@
 		padding: 0;
 		border: 0;
 		background: transparent;
-		color: #666;
+		color: var(--muted);
 		font: inherit;
 		font-size: 1.25rem;
 		cursor: pointer;
@@ -385,8 +385,8 @@
 		place-items: center;
 		padding: 0 0.3rem;
 		border-radius: 999px;
-		background: #eee;
-		color: #666;
+		background: var(--surface-soft);
+		color: var(--muted);
 		font-size: 0.7rem;
 		font-weight: 600;
 	}
@@ -395,7 +395,7 @@
 		display: flex;
 		min-height: 3.5rem;
 		align-items: center;
-		border-bottom: 1px solid #eee;
+		border-bottom: 1px solid var(--surface-soft);
 	}
 
 	.shopping-item {
@@ -425,8 +425,8 @@
 	}
 
 	.check.checked {
-		border-color: #111;
-		background: #111;
+		border-color: var(--accent);
+		background: var(--accent);
 		color: white;
 		font-size: 0.8rem;
 	}
@@ -450,14 +450,14 @@
 		border: 0;
 		border-radius: 50%;
 		background: transparent;
-		color: #666;
+		color: var(--muted);
 		font: inherit;
 		font-size: 1.25rem;
 		cursor: pointer;
 	}
 
 	.menu-button:hover {
-		background: #f3f3f3;
+		background: var(--surface-soft);
 	}
 
 	.menu {
@@ -467,7 +467,7 @@
 		right: 0;
 		width: 8rem;
 		overflow: hidden;
-		border: 1px solid #ddd;
+		border: 1px solid var(--line);
 		border-radius: 0.65rem;
 		background: white;
 		box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 12%);
@@ -486,7 +486,7 @@
 	}
 
 	.menu button:hover {
-		background: #f5f5f5;
+		background: var(--surface-soft);
 	}
 
 	.menu .danger {
@@ -499,7 +499,7 @@
 
 	.suggestion-heading p {
 		margin: 0.15rem 0 0;
-		color: #777;
+		color: var(--muted);
 		font-size: 0.8rem;
 	}
 
@@ -509,7 +509,7 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
-		border-bottom: 1px solid #eee;
+		border-bottom: 1px solid var(--surface-soft);
 	}
 
 	.suggestion > div {
@@ -524,14 +524,14 @@
 	}
 
 	.suggestion span {
-		color: #777;
+		color: var(--muted);
 		font-size: 0.8rem;
 	}
 
 	.suggestion button {
 		flex: 0 0 auto;
 		padding: 0.45rem 0.75rem;
-		border: 1px solid #ddd;
+		border: 1px solid var(--line);
 		border-radius: 999px;
 		background: white;
 		font: inherit;
@@ -549,7 +549,7 @@
 	}
 
 	.purchased-item .item-name {
-		color: #777;
+		color: var(--muted);
 		text-decoration: line-through;
 	}
 
@@ -558,7 +558,7 @@
 		padding: 0.5rem;
 		border: 0;
 		background: transparent;
-		color: #555;
+		color: var(--muted);
 		font: inherit;
 		font-size: 0.8rem;
 		font-weight: 600;
@@ -571,7 +571,7 @@
 		margin-top: 1rem;
 		border: 0;
 		border-radius: 0.65rem;
-		background: #111;
+		background: var(--accent);
 		color: white;
 		font: inherit;
 		font-weight: 600;
@@ -579,7 +579,7 @@
 	}
 
 	.empty {
-		color: #777;
+		color: var(--muted);
 		font-size: 0.9rem;
 	}
 
@@ -608,7 +608,7 @@
 
 	.dialog p {
 		margin: 0;
-		color: #666;
+		color: var(--muted);
 		font-size: 0.875rem;
 		line-height: 1.5;
 	}
@@ -629,14 +629,80 @@
 	}
 
 	.secondary-button {
-		border: 1px solid #ddd;
+		border: 1px solid var(--line);
 		background: white;
-		color: #111;
+		color: var(--ink);
 	}
 
 	.confirm-button {
-		border: 1px solid #111;
-		background: #111;
+		border: 1px solid var(--ink);
+		background: var(--accent);
 		color: white;
+	}
+
+	h1 {
+		font-size: 2.1rem;
+	}
+	.household {
+		color: var(--accent);
+		font-weight: 600;
+		margin-bottom: 0.3rem;
+	}
+	.add-button {
+		border-radius: 1rem;
+		min-height: 3rem;
+		box-shadow: var(--shadow);
+	}
+	.group {
+		padding: 1.15rem;
+		border: 1px solid var(--line);
+		border-radius: 1.25rem;
+		background: white;
+		box-shadow: var(--shadow);
+		margin-bottom: 1rem;
+	}
+	.section-heading {
+		margin-bottom: 0.75rem;
+	}
+	.section-heading > span {
+		background: var(--accent-soft);
+		color: var(--accent);
+	}
+	.shopping-row:last-of-type {
+		border-bottom: 0;
+	}
+	.item-name {
+		overflow-wrap: anywhere;
+	}
+	.check {
+		border-color: #a7bdb0;
+		border-radius: 0.5rem;
+	}
+	.suggestions {
+		background: #fffaf0;
+		border-color: #ecdfbf;
+	}
+	.suggestion-heading h2 {
+		color: var(--warning);
+	}
+	.suggestion button {
+		color: var(--accent);
+		border-color: var(--line);
+		min-height: 2.75rem;
+	}
+	.suggestion:last-child {
+		border-bottom: 0;
+	}
+	.feedback {
+		background: var(--accent-soft);
+		color: var(--accent);
+		border-radius: 1rem;
+	}
+	.finish-button {
+		border-radius: 0.9rem;
+	}
+	.dialog {
+		border-radius: 1.3rem;
+		padding: 1.5rem;
 	}
 </style>

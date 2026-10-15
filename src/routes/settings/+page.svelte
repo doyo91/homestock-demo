@@ -115,9 +115,10 @@
 				<strong>No hay</strong>: se ha agotado.
 			</p>
 			<p>
-				Toca una tarjeta para cambiar el estado, añadir el producto a Compra, editarlo o
-				desactivarlo. Desactivarlo lo oculta del inventario y detiene su reposición automática; las
-				compras pendientes se conservan.
+				Toca una tarjeta para cambiar el estado, añadir el producto a Compra, editarlo o eliminarlo.
+				Eliminar producto pide confirmación y lo borra del inventario, de Sugerencias y de Compra,
+				incluidos los elementos marcados como comprados. Después puedes crear otro con el mismo
+				nombre.
 			</p>
 		</details>
 		<details>

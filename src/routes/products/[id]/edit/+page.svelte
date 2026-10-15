@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { createFeedback } from '$lib/prototype/feedback.svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import ProductForm from '$lib/components/ProductForm.svelte';
@@ -18,7 +19,7 @@
 			}
 		: undefined;
 
-	let feedback = $state<string | null>(null);
+	const feedback = createFeedback();
 
 	function saveProduct(value: {
 		name: string;
@@ -41,12 +42,12 @@
 		);
 
 		if (success) {
-			feedback = 'Producto actualizado correctamente.';
+			feedback.show('Producto actualizado correctamente.');
 			setTimeout(() => {
 				window.location.href = resolve('/');
 			}, 500);
 		} else {
-			feedback = 'Ya existe un producto con ese nombre.';
+			feedback.show('Ya existe un producto con ese nombre.', true);
 		}
 	}
 </script>
@@ -67,11 +68,11 @@
 		<div></div>
 	</header>
 
-	{#if feedback}
+	{#if feedback.message}
 		<div class="feedback" role="status">
-			<span>{feedback}</span>
+			<span>{feedback.message}</span>
 
-			<button type="button" aria-label="Cerrar mensaje" onclick={() => (feedback = null)}>
+			<button type="button" aria-label="Cerrar mensaje" onclick={() => feedback.clear()}>
 				×
 			</button>
 		</div>

@@ -25,11 +25,12 @@
 
 	let shopping = $derived(prototypeState.shopping);
 
-	let lowSuggestions = $derived(
+	let suggestions = $derived(
 		prototypeState.inventory.filter(
 			(product) =>
 				product.active &&
-				product.status === 'LOW' &&
+				(product.status === 'LOW' ||
+					(product.status === 'OUT' && product.replenishmentMode === 'AUTOMATIC')) &&
 				!shopping.some((item) => item.productId === product.id)
 		)
 	);
@@ -102,7 +103,7 @@
 			return;
 		}
 
-		feedback = `${item.name} eliminado de Compra.`;
+		feedback = `${item.name} quitado de Compra.`;
 	}
 
 	function requestFinish() {
@@ -217,21 +218,26 @@
 		{/if}
 	</section>
 
-	{#if lowSuggestions.length > 0}
+	{#if suggestions.length > 0}
 		<section class="group suggestions">
 			<div class="suggestion-heading">
-				<h2>Queda poco</h2>
-				<p>Quizá quieras reponerlo</p>
+				<h2>Sugerencias</h2>
+				<p>Productos que quizá quieras añadir a Compra</p>
 			</div>
 
-			{#each lowSuggestions as item (item.id)}
+			{#each suggestions as item (item.id)}
 				<div class="suggestion">
 					<div>
 						<strong>{item.name}</strong>
 						<span>{getLocationName(item.locationId)}</span>
 					</div>
 
-					<button type="button" onclick={() => addSuggestion(item.id)}> Añadir </button>
+					<div class="suggestion-actions">
+						<span class="suggestion-status" class:out={item.status === 'OUT'}>
+							{item.status === 'LOW' ? 'Poco' : 'No hay'}
+						</span>
+						<button type="button" onclick={() => addSuggestion(item.id)}>Añadir</button>
+					</div>
 				</div>
 			{/each}
 		</section>
@@ -489,7 +495,29 @@
 		font-size: 0.8rem;
 	}
 
-	.suggestion button {
+	.suggestion-actions {
+		display: flex;
+		flex: 0 0 auto;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.suggestion-status {
+		padding: 0.25rem 0.5rem;
+		border-radius: 999px;
+		background: var(--warning-soft);
+		color: var(--warning);
+		font-size: 0.72rem;
+		font-weight: 650;
+		white-space: nowrap;
+	}
+
+	.suggestion-status.out {
+		background: var(--danger-soft);
+		color: var(--danger);
+	}
+
+	.suggestion-actions button {
 		flex: 0 0 auto;
 		padding: 0.45rem 0.75rem;
 		border: 1px solid var(--line);
@@ -646,7 +674,7 @@
 	.suggestion-heading h2 {
 		color: var(--warning);
 	}
-	.suggestion button {
+	.suggestion-actions button {
 		color: var(--accent);
 		border-color: var(--line);
 		min-height: 2.75rem;

@@ -22,7 +22,6 @@
 
 	let showFinishConfirmation = $state(false);
 	let feedback = $state<string | null>(null);
-	let openMenuId = $state<string | null>(null);
 
 	let shopping = $derived(prototypeState.shopping);
 
@@ -53,7 +52,6 @@
 		}
 
 		feedback = null;
-		openMenuId = null;
 	}
 
 	function undoPurchase(id: string) {
@@ -70,7 +68,6 @@
 		}
 
 		feedback = null;
-		openMenuId = null;
 	}
 
 	function addSuggestion(productId: string) {
@@ -90,10 +87,6 @@
 		feedback = `${product.name} añadido a Compra.`;
 	}
 
-	function toggleMenu(id: string) {
-		openMenuId = openMenuId === id ? null : id;
-	}
-
 	function removePendingItem(id: string) {
 		const item = shopping.find(
 			(candidate) => candidate.id === id && candidate.status === 'PENDING'
@@ -109,7 +102,6 @@
 			return;
 		}
 
-		openMenuId = null;
 		feedback = `${item.name} eliminado de Compra.`;
 	}
 
@@ -198,25 +190,25 @@
 					</span>
 				</button>
 
-				<div class="item-actions">
-					<button
-						class="menu-button"
-						type="button"
-						aria-label={`Acciones de ${item.name}`}
-						aria-expanded={openMenuId === item.id}
-						onclick={() => toggleMenu(item.id)}
+				<button
+					class="delete-button"
+					type="button"
+					aria-label={`Eliminar ${item.name} de Compra`}
+					title="Eliminar de Compra"
+					onclick={() => removePendingItem(item.id)}
+				>
+					<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.8"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
 					>
-						⋯
-					</button>
-
-					{#if openMenuId === item.id}
-						<div class="menu">
-							<button class="danger" type="button" onclick={() => removePendingItem(item.id)}>
-								Eliminar
-							</button>
-						</div>
-					{/if}
-				</div>
+						<path d="M3 6h18M8 6V4h8v2m3 0-.8 14H5.8L5 6m5 4v6m4-6v6" />
+					</svg>
+				</button>
 			</div>
 		{/each}
 
@@ -438,61 +430,28 @@
 		flex: 1;
 	}
 
-	.item-actions {
-		position: relative;
-		flex: 0 0 auto;
-	}
-
-	.menu-button {
+	.delete-button {
 		display: grid;
 		width: 2.75rem;
 		height: 2.75rem;
+		flex: 0 0 auto;
 		place-items: center;
 		padding: 0;
 		border: 0;
 		border-radius: 50%;
 		background: transparent;
 		color: var(--muted);
-		font: inherit;
-		font-size: 1.25rem;
 		cursor: pointer;
 	}
 
-	.menu-button:hover {
-		background: var(--surface-soft);
+	.delete-button svg {
+		width: 1.2rem;
+		height: 1.2rem;
 	}
 
-	.menu {
-		position: absolute;
-		z-index: 10;
-		top: 2.5rem;
-		right: 0;
-		width: 8rem;
-		overflow: hidden;
-		border: 1px solid var(--line);
-		border-radius: 0.65rem;
-		background: white;
-		box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 12%);
-	}
-
-	.menu button {
-		display: block;
-		width: 100%;
-		padding: 0.75rem;
-		border: 0;
-		background: white;
-		font: inherit;
-		font-size: 0.85rem;
-		text-align: left;
-		cursor: pointer;
-	}
-
-	.menu button:hover {
-		background: var(--surface-soft);
-	}
-
-	.menu .danger {
-		color: #a43b3b;
+	.delete-button:hover {
+		background: var(--danger-soft);
+		color: var(--danger);
 	}
 
 	.suggestion-heading {

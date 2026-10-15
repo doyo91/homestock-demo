@@ -12,9 +12,9 @@
 	});
 
 	const navigation = [
-		{ href: '/', label: 'Inventario' },
-		{ href: '/shopping', label: 'Compra' },
-		{ href: '/settings', label: 'Ajustes' }
+		{ href: '/', label: 'Inventario', color: 'var(--icon-inventory)' },
+		{ href: '/shopping', label: 'Compra', color: 'var(--icon-shopping)' },
+		{ href: '/settings', label: 'Ajustes', color: 'var(--icon-settings)' }
 	] as const;
 
 	function isActive(href: (typeof navigation)[number]['href']) {
@@ -55,6 +55,7 @@
 			<a
 				href={resolve(item.href)}
 				class:active={isActive(item.href)}
+				style={`--nav-icon: ${item.color}`}
 				aria-current={isActive(item.href) ? 'page' : undefined}
 			>
 				<svg
@@ -115,8 +116,8 @@
 		width: 2.2rem;
 		height: 2.2rem;
 		border-radius: 0.75rem;
-		background: var(--accent);
-		color: var(--on-accent);
+		background: linear-gradient(135deg, var(--brand-start), var(--brand-end));
+		color: #ffffff;
 	}
 	.brand-mark svg {
 		width: 1.3rem;
@@ -175,12 +176,14 @@
 		font-weight: 600;
 	}
 	nav a svg {
+		color: var(--nav-icon);
 		width: 1.35rem;
 		height: 1.35rem;
 	}
 	nav a.active {
-		background: var(--accent-soft);
-		color: var(--accent);
+		background: color-mix(in srgb, var(--nav-icon) 12%, var(--surface));
+		color: var(--ink);
+		font-weight: 700;
 	}
 	@media (min-width: 640px) {
 		.brand-header {

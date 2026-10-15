@@ -125,7 +125,7 @@
 		display: inline-flex;
 		vertical-align: middle;
 		margin-left: 0.25rem;
-		color: var(--muted);
+		color: var(--icon-automatic);
 	}
 	.current-status {
 		display: flex;

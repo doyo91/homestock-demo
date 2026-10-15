@@ -221,7 +221,22 @@
 	{#if suggestions.length > 0}
 		<section class="group suggestions">
 			<div class="suggestion-heading">
-				<h2>Sugerencias</h2>
+				<h2>
+					<svg
+						viewBox="0 0 24 24"
+						width="20"
+						height="20"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.6"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="m12 3 2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4L12 3Z" />
+					</svg>
+					Sugerencias
+				</h2>
 				<p>Productos que quizá quieras añadir a Compra</p>
 			</div>
 
@@ -450,7 +465,7 @@
 		border: 0;
 		border-radius: 50%;
 		background: transparent;
-		color: var(--muted);
+		color: var(--danger);
 		cursor: pointer;
 	}
 
@@ -480,7 +495,7 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
-		border-bottom: 1px solid var(--surface-soft);
+		border-bottom: 1px solid var(--suggestion-line);
 	}
 
 	.suggestion > div {
@@ -681,11 +696,14 @@
 		border-radius: 0.5rem;
 	}
 	.suggestions {
-		background: var(--surface);
-		border-color: var(--line);
+		background: var(--suggestion-surface);
+		border-color: var(--suggestion-line);
 	}
 	.suggestion-heading h2 {
-		color: var(--ink);
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: var(--suggestion-heading);
 	}
 	.suggestion-actions button {
 		color: var(--accent);

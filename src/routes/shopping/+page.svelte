@@ -230,12 +230,16 @@
 					<div>
 						<strong>{item.name}</strong>
 						<span>{getLocationName(item.locationId)}</span>
+						<span
+							class="suggestion-status"
+							class:low={item.status === 'LOW'}
+							class:out={item.status === 'OUT'}
+						>
+							{item.status === 'LOW' ? 'Poco' : 'No hay'}
+						</span>
 					</div>
 
 					<div class="suggestion-actions">
-						<span class="suggestion-status" class:out={item.status === 'OUT'}>
-							{item.status === 'LOW' ? 'Poco' : 'No hay'}
-						</span>
 						<button type="button" onclick={() => addSuggestion(item.id)}>Añadir</button>
 					</div>
 				</div>
@@ -502,18 +506,27 @@
 		gap: 0.5rem;
 	}
 
-	.suggestion-status {
-		padding: 0.25rem 0.5rem;
-		border-radius: 999px;
-		background: var(--warning-soft);
+	.suggestion .suggestion-status {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		align-self: flex-start;
+		margin-top: 0.15rem;
 		color: var(--warning);
 		font-size: 0.72rem;
-		font-weight: 650;
+		font-weight: 600;
 		white-space: nowrap;
 	}
 
-	.suggestion-status.out {
-		background: var(--danger-soft);
+	.suggestion-status::before {
+		width: 0.4rem;
+		height: 0.4rem;
+		border-radius: 50%;
+		background: currentColor;
+		content: '';
+	}
+
+	.suggestion .suggestion-status.out {
 		color: var(--danger);
 	}
 
@@ -668,11 +681,11 @@
 		border-radius: 0.5rem;
 	}
 	.suggestions {
-		background: #fffaf0;
-		border-color: #ecdfbf;
+		background: var(--surface);
+		border-color: var(--line);
 	}
 	.suggestion-heading h2 {
-		color: var(--warning);
+		color: var(--ink);
 	}
 	.suggestion-actions button {
 		color: var(--accent);

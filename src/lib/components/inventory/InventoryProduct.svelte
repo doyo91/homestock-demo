@@ -132,20 +132,15 @@
 		flex-shrink: 0;
 		align-items: center;
 		gap: 0.3rem;
-		padding: 0.3rem 0.5rem;
-		border-radius: 999px;
-		background: var(--accent-soft);
 		color: var(--accent);
 		font-size: 0.75rem;
 		font-weight: 600;
 		white-space: nowrap;
 	}
 	.current-status.low {
-		background: var(--warning-soft);
 		color: var(--warning);
 	}
 	.current-status.out {
-		background: var(--danger-soft);
 		color: var(--danger);
 	}
 	.status-dot {

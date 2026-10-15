@@ -491,7 +491,7 @@
 		gap: 0.25rem;
 		padding: 0.25rem;
 		border-radius: 1rem;
-		background: #e9eee7;
+		background: #f0f1ef;
 	}
 	.status-filters button {
 		min-height: 2.5rem;

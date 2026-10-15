@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { createFeedback } from '$lib/prototype/feedback.svelte';
 	import { resolve } from '$app/paths';
 	import { getPrototypeState, getLocationById } from '$lib/prototype/state.svelte';
 	import {
@@ -38,7 +39,7 @@
 		...prototypeState.categories.filter((category) => category.active),
 		{ id: 'NONE', name: 'Sin categoría' }
 	]);
-	let feedback = $state('');
+	const feedback = createFeedback();
 	let selectedProduct = $derived(inventory.find((item) => item.id === selectedProductId));
 
 	let filteredInventory = $derived(
@@ -67,22 +68,26 @@
 
 	function handleStatusChange(id: string, status: InventoryStatus) {
 		const updated = changeInventoryStatus(id, status);
-		if (!updated) feedback = 'No se ha podido actualizar el estado.';
+		if (!updated) feedback.show('No se ha podido actualizar el estado.', true);
 		selectedProductId = null;
 	}
 
 	function handleAddToShopping(id: string) {
-		feedback = addProductToShopping(id)
-			? 'Producto añadido a Compra.'
-			: 'El producto ya está en Compra.';
+		feedback.show(
+			addProductToShopping(id) ? 'Producto añadido a Compra.' : 'El producto ya está en Compra.'
+		);
 		selectedProductId = null;
 	}
 
 	function handleDeactivate(id: string) {
 		const product = inventory.find((item) => item.id === id);
-		feedback = deactivateProduct(id)
-			? `${product?.name ?? 'Producto'} desactivado.`
-			: 'No se ha podido desactivar el producto.';
+		const deactivated = deactivateProduct(id);
+		feedback.show(
+			deactivated
+				? `${product?.name ?? 'Producto'} desactivado.`
+				: 'No se ha podido desactivar el producto.',
+			!deactivated
+		);
 		selectedProductId = null;
 	}
 
@@ -109,8 +114,8 @@
 		</a>
 	</header>
 
-	{#if feedback}
-		<p class="feedback" role="status">{feedback}</p>
+	{#if feedback.message}
+		<p class="feedback" role="status">{feedback.message}</p>
 	{/if}
 
 	<div class="category-filters" role="group" aria-label="Filtrar por categoría">

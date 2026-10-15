@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { createFeedback } from '$lib/prototype/feedback.svelte';
 	import { resolve } from '$app/paths';
 	import {
 		addProductToShopping,
@@ -21,7 +22,7 @@
 	}
 
 	let showFinishConfirmation = $state(false);
-	let feedback = $state<string | null>(null);
+	const feedback = createFeedback();
 
 	let shopping = $derived(prototypeState.shopping);
 
@@ -52,7 +53,7 @@
 			return;
 		}
 
-		feedback = null;
+		feedback.clear();
 	}
 
 	function undoPurchase(id: string) {
@@ -68,7 +69,7 @@
 			return;
 		}
 
-		feedback = null;
+		feedback.clear();
 	}
 
 	function addSuggestion(productId: string) {
@@ -81,11 +82,11 @@
 		const added = addProductToShopping(productId);
 
 		if (!added) {
-			feedback = `${product.name} ya está en Compra.`;
+			feedback.show(`${product.name} ya está en Compra.`);
 			return;
 		}
 
-		feedback = `${product.name} añadido a Compra.`;
+		feedback.show(`${product.name} añadido a Compra.`);
 	}
 
 	function removePendingItem(id: string) {
@@ -103,7 +104,7 @@
 			return;
 		}
 
-		feedback = `${item.name} quitado de Compra.`;
+		feedback.show(`${item.name} quitado de Compra.`);
 	}
 
 	function requestFinish() {
@@ -129,10 +130,11 @@
 
 		showFinishConfirmation = false;
 
-		feedback =
+		feedback.show(
 			purchasedCount === 1
 				? 'Compra finalizada. 1 artículo comprado.'
-				: `Compra finalizada. ${purchasedCount} artículos comprados.`;
+				: `Compra finalizada. ${purchasedCount} artículos comprados.`
+		);
 	}
 
 	function cancelFinish() {
@@ -157,11 +159,11 @@
 		</a>
 	</header>
 
-	{#if feedback}
+	{#if feedback.message}
 		<div class="feedback" role="status">
-			<span>{feedback}</span>
+			<span>{feedback.message}</span>
 
-			<button type="button" aria-label="Cerrar mensaje" onclick={() => (feedback = null)}>
+			<button type="button" aria-label="Cerrar mensaje" onclick={() => feedback.clear()}>
 				×
 			</button>
 		</div>

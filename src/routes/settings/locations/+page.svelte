@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { createFeedback } from '$lib/prototype/feedback.svelte';
 	import { resolve } from '$app/paths';
 	import {
 		getPrototypeState,
@@ -14,7 +15,7 @@
 	let editingId = $state<string | null>(null);
 	let newLocationName = $state('');
 	let editingName = $state('');
-	let feedback = $state<string | null>(null);
+	const feedback = createFeedback();
 
 	function toggleActive(id: string) {
 		const location = prototypeState.locations.find((item) => item.id === id);
@@ -25,7 +26,7 @@
 
 		toggleLocationActive(id);
 
-		feedback = location.active ? `${location.name} desactivada.` : `${location.name} activada.`;
+		feedback.show(location.active ? `${location.name} desactivada.` : `${location.name} activada.`);
 	}
 
 	function openCreateForm() {
@@ -33,7 +34,7 @@
 		editingName = '';
 		newLocationName = '';
 		showCreateForm = true;
-		feedback = null;
+		feedback.clear();
 	}
 
 	function cancelCreate() {
@@ -53,9 +54,9 @@
 		if (locationId) {
 			showCreateForm = false;
 			newLocationName = '';
-			feedback = `${name} creada.`;
+			feedback.show(`${name} creada.`);
 		} else {
-			feedback = 'Ya existe una ubicación con ese nombre.';
+			feedback.show('Ya existe una ubicación con ese nombre.', true);
 		}
 	}
 
@@ -71,7 +72,7 @@
 
 		editingId = id;
 		editingName = location.name;
-		feedback = null;
+		feedback.clear();
 	}
 
 	function cancelEditing() {
@@ -95,15 +96,15 @@
 			editingId = null;
 			editingName = '';
 
-			feedback = previousName === name ? null : `${previousName} renombrada como ${name}.`;
+			feedback.show(previousName === name ? null : `${previousName} renombrada como ${name}.`);
 		} else {
-			feedback = 'Ya existe una ubicación con ese nombre.';
+			feedback.show('Ya existe una ubicación con ese nombre.', true);
 		}
 	}
 
 	function moveLocationItem(id: string, direction: -1 | 1) {
 		moveLocation(id, direction);
-		feedback = null;
+		feedback.clear();
 	}
 </script>
 
@@ -133,11 +134,11 @@
 
 	<p class="description">Organiza los productos según dónde los guardas.</p>
 
-	{#if feedback}
+	{#if feedback.message}
 		<div class="feedback" role="status">
-			<span>{feedback}</span>
+			<span>{feedback.message}</span>
 
-			<button type="button" aria-label="Cerrar mensaje" onclick={() => (feedback = null)}>
+			<button type="button" aria-label="Cerrar mensaje" onclick={() => feedback.clear()}>
 				×
 			</button>
 		</div>

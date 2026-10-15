@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { createFeedback } from '$lib/prototype/feedback.svelte';
 	import { resolve } from '$app/paths';
 	import {
 		getPrototypeState,
@@ -17,7 +18,7 @@
 	let newCategoryName = $state('');
 	let editingName = $state('');
 	let colorPickerId = $state<string | null>(null);
-	let feedback = $state<string | null>(null);
+	const feedback = createFeedback();
 
 	function toggleActive(id: string) {
 		const category = prototypeState.categories.find((item) => item.id === id);
@@ -28,7 +29,7 @@
 
 		toggleCategoryActive(id);
 
-		feedback = category.active ? `${category.name} desactivada.` : `${category.name} activada.`;
+		feedback.show(category.active ? `${category.name} desactivada.` : `${category.name} activada.`);
 	}
 
 	function openCreateForm() {
@@ -36,7 +37,7 @@
 		editingName = '';
 		newCategoryName = '';
 		showCreateForm = true;
-		feedback = null;
+		feedback.clear();
 	}
 
 	function cancelCreate() {
@@ -56,9 +57,9 @@
 		if (categoryId) {
 			showCreateForm = false;
 			newCategoryName = '';
-			feedback = `${name} creada.`;
+			feedback.show(`${name} creada.`);
 		} else {
-			feedback = 'Ya existe una categoría con ese nombre.';
+			feedback.show('Ya existe una categoría con ese nombre.', true);
 		}
 	}
 
@@ -74,7 +75,7 @@
 
 		editingId = id;
 		editingName = category.name;
-		feedback = null;
+		feedback.clear();
 	}
 
 	function cancelEditing() {
@@ -98,21 +99,21 @@
 			editingId = null;
 			editingName = '';
 
-			feedback = previousName === name ? null : `${previousName} renombrada como ${name}.`;
+			feedback.show(previousName === name ? null : `${previousName} renombrada como ${name}.`);
 		} else {
-			feedback = 'Ya existe una categoría con ese nombre.';
+			feedback.show('Ya existe una categoría con ese nombre.', true);
 		}
 	}
 
 	function moveCategoryItem(id: string, direction: -1 | 1) {
 		moveCategory(id, direction);
-		feedback = null;
+		feedback.clear();
 	}
 
 	function chooseColor(id: string, color: (typeof CATEGORY_PALETTE)[number]['id']) {
 		if (setCategoryColor(id, color)) {
 			colorPickerId = null;
-			feedback = 'Color actualizado.';
+			feedback.show('Color actualizado.');
 		}
 	}
 </script>
@@ -143,11 +144,11 @@
 
 	<p class="description">Organiza los productos por tipo.</p>
 
-	{#if feedback}
+	{#if feedback.message}
 		<div class="feedback" role="status">
-			<span>{feedback}</span>
+			<span>{feedback.message}</span>
 
-			<button type="button" aria-label="Cerrar mensaje" onclick={() => (feedback = null)}>
+			<button type="button" aria-label="Cerrar mensaje" onclick={() => feedback.clear()}>
 				×
 			</button>
 		</div>

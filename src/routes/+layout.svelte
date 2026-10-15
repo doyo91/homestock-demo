@@ -3,8 +3,13 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import favicon from '$lib/assets/favicon.svg';
+	import { appearance } from '$lib/prototype/appearance.svelte';
 
 	let { children } = $props();
+
+	$effect(() => {
+		document.documentElement.dataset.theme = appearance.theme;
+	});
 
 	const navigation = [
 		{ href: '/', label: 'Inventario' },
@@ -111,7 +116,7 @@
 		height: 2.2rem;
 		border-radius: 0.75rem;
 		background: var(--accent);
-		color: white;
+		color: var(--on-accent);
 	}
 	.brand-mark svg {
 		width: 1.3rem;
@@ -131,7 +136,7 @@
 		left: 1rem;
 		z-index: 200;
 		padding: 0.75rem;
-		background: white;
+		background: var(--surface);
 	}
 	.skip-link:focus {
 		top: 1rem;
@@ -151,9 +156,9 @@
 		gap: 0.3rem;
 		padding: 0.6rem max(0.75rem, env(safe-area-inset-right, 0px))
 			calc(0.6rem + env(safe-area-inset-bottom, 0px)) max(0.75rem, env(safe-area-inset-left, 0px));
-		background: rgb(255 255 255 / 96%);
+		background: var(--surface);
 		border-top: 1px solid var(--line);
-		box-shadow: 0 -4px 24px rgb(36 59 52 / 4%);
+		box-shadow: 0 -4px 24px rgb(0 0 0 / 4%);
 	}
 	nav a {
 		display: flex;
@@ -189,7 +194,7 @@
 			transform: translateX(-50%);
 			border: 1px solid var(--line);
 			border-radius: 1.4rem;
-			box-shadow: 0 8px 32px rgb(36 59 52 / 10%);
+			box-shadow: 0 8px 32px rgb(0 0 0 / 10%);
 		}
 	}
 </style>

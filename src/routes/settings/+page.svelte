@@ -1,10 +1,19 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { getPrototypeState, setDefaultScreen } from '$lib/prototype/state.svelte';
+	import { appearance, setTheme, type Theme } from '$lib/prototype/appearance.svelte';
 
 	const prototypeState = getPrototypeState();
 
 	let defaultScreen = $state(prototypeState.defaultScreen);
+	let themeFeedback = $state('');
+
+	function changeTheme(event: Event) {
+		const theme = (event.currentTarget as HTMLSelectElement).value as Theme;
+		themeFeedback = setTheme(theme)
+			? ''
+			: 'El tema se ha aplicado, pero este navegador no permite guardar la preferencia.';
+	}
 
 	$effect(() => {
 		setDefaultScreen(defaultScreen);
@@ -35,6 +44,18 @@
 				<option value="SHOPPING">Compra</option>
 			</select>
 		</div>
+
+		<div class="setting-row">
+			<div>
+				<strong>Apariencia</strong>
+				<span>Elige el tema de este dispositivo</span>
+			</div>
+			<select value={appearance.theme} onchange={changeTheme} aria-label="Apariencia">
+				<option value="light">Claro</option>
+				<option value="dark">Oscuro</option>
+			</select>
+		</div>
+		{#if themeFeedback}<p class="theme-feedback" role="status">{themeFeedback}</p>{/if}
 	</section>
 
 	<section class="group">
@@ -81,6 +102,70 @@
 				<span>Sesión local de desarrollo</span>
 			</div>
 		</div>
+	</section>
+
+	<section class="group help" aria-labelledby="help-title">
+		<h2 id="help-title">Ayuda y guías rápidas</h2>
+		<p class="help-intro">Lo esencial para organizar tu casa y preparar la compra.</p>
+
+		<details>
+			<summary>Inventario y estados</summary>
+			<p>
+				<strong>Hay</strong>: tienes suficiente. <strong>Poco</strong>: empieza a faltar.
+				<strong>No hay</strong>: se ha agotado.
+			</p>
+			<p>
+				Toca una tarjeta para cambiar el estado, añadir el producto a Compra, editarlo o
+				desactivarlo. Desactivarlo lo oculta del inventario y detiene su reposición automática; las
+				compras pendientes se conservan.
+			</p>
+		</details>
+		<details>
+			<summary>Reposición automática y manual</summary>
+			<p>
+				Un producto automático se añade a Pendientes cuando cambia a <strong>No hay</strong>. Si
+				pasa de No hay a otro estado, se retira su pendiente automático. El icono de flechas junto
+				al nombre identifica estos productos.
+			</p>
+			<p>
+				Los productos manuales se añaden a Compra cuando tú lo decides. El modo de reposición se
+				cambia en Editar producto.
+			</p>
+		</details>
+		<details>
+			<summary>Sugerencias y quitar de Compra</summary>
+			<p>
+				Sugerencias reúne productos en <strong>Poco</strong> y automáticos en
+				<strong>No hay</strong> que no están en Compra. Pulsa Añadir para pasarlos a Pendientes.
+			</p>
+			<p>
+				La papelera solo quita un pendiente de Compra: no elimina el producto ni cambia su estado.
+				Si cumple las condiciones anteriores, vuelve a Sugerencias y puedes añadirlo cuando quieras.
+			</p>
+		</details>
+		<details>
+			<summary>Comprar, deshacer y finalizar</summary>
+			<p>
+				Toca un pendiente para marcarlo como comprado. Si está asociado a un producto, su inventario
+				pasa a <strong>Hay</strong>. Deshacer recupera su estado anterior y lo devuelve a
+				Pendientes.
+			</p>
+			<p>
+				Finalizar compra retira los comprados de esta lista. Los pendientes se conservan para otra
+				ocasión.
+			</p>
+		</details>
+		<details>
+			<summary>Categorías, ubicaciones y esta demo</summary>
+			<p>
+				Las categorías agrupan tipos de producto y pueden tener un color. Las ubicaciones indican
+				dónde los guardas. Ambas se gestionan desde Ajustes y sirven para filtrar el inventario.
+			</p>
+			<p>
+				Esta demo guarda los cambios en este navegador. No se comparten entre dispositivos; si
+				borras sus datos, se recupera el contenido de ejemplo.
+			</p>
+		</details>
 	</section>
 </section>
 
@@ -156,7 +241,7 @@
 		padding: 0.45rem 0.6rem;
 		border: 1px solid var(--line);
 		border-radius: 0.5rem;
-		background: white;
+		background: var(--surface);
 		font: inherit;
 		font-size: 0.875rem;
 	}
@@ -180,7 +265,7 @@
 		padding: 1.1rem;
 		border: 1px solid var(--line);
 		border-radius: 1.25rem;
-		background: white;
+		background: var(--surface);
 		box-shadow: var(--shadow);
 		margin-bottom: 1rem;
 	}
@@ -199,6 +284,30 @@
 	}
 	select {
 		min-height: 2.75rem;
+	}
+	.help-intro,
+	.theme-feedback {
+		margin: 0.5rem 0;
+		color: var(--muted);
+		font-size: 0.85rem;
+	}
+	.help details {
+		border-top: 1px solid var(--line);
+	}
+	.help summary {
+		padding: 1rem 0;
+		font-size: 0.95rem;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.help details p {
+		margin: 0 0 0.85rem;
+		color: var(--muted);
+		font-size: 0.875rem;
+		line-height: 1.6;
+	}
+	.help details strong {
+		color: var(--ink);
 	}
 	@media (max-width: 359px) {
 		.setting-row {

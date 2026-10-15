@@ -248,7 +248,7 @@
 		padding: 0.5rem 0.85rem;
 		border: 1px solid var(--line);
 		border-radius: 999px;
-		background: white;
+		background: var(--surface);
 		color: var(--muted);
 		font: inherit;
 		font-size: 0.85rem;
@@ -306,7 +306,7 @@
 		place-items: center;
 		border-radius: 50%;
 		background: var(--accent);
-		color: white;
+		color: var(--on-accent);
 		font-size: 1.75rem;
 		line-height: 1;
 		text-decoration: none;
@@ -339,7 +339,7 @@
 		padding: 0.45rem 0.75rem;
 		border: 1px solid var(--line);
 		border-radius: 999px;
-		background: white;
+		background: var(--surface);
 		color: var(--muted);
 		font: inherit;
 		font-size: 0.8rem;
@@ -350,7 +350,7 @@
 	.filter-button.active {
 		border-color: var(--accent);
 		background: var(--accent);
-		color: white;
+		color: var(--on-accent);
 	}
 
 	.filter-button {
@@ -367,7 +367,7 @@
 		padding: 0 0.25rem;
 		border-radius: 999px;
 		background: var(--accent);
-		color: white;
+		color: var(--on-accent);
 		font-size: 0.7rem;
 		font-weight: 600;
 		line-height: 1.25rem;
@@ -396,7 +396,7 @@
 		padding: 0.5rem 0.75rem;
 		border: 1px solid var(--line);
 		border-radius: 0.5rem;
-		background: white;
+		background: var(--surface);
 		font: inherit;
 	}
 
@@ -459,7 +459,7 @@
 		padding: 0.6rem 1.2rem;
 		border-radius: 0.6rem;
 		background: var(--accent);
-		color: white;
+		color: var(--on-accent);
 		font-weight: 600;
 		text-decoration: none;
 		cursor: pointer;
@@ -485,13 +485,13 @@
 		width: 3rem;
 		height: 3rem;
 		border-radius: 1rem;
-		box-shadow: 0 4px 12px rgb(36 107 80 / 18%);
+		box-shadow: 0 4px 12px rgb(0 0 0 / 18%);
 	}
 	.status-filters {
 		gap: 0.25rem;
 		padding: 0.25rem;
 		border-radius: 1rem;
-		background: #f0f1ef;
+		background: var(--surface-soft);
 	}
 	.status-filters button {
 		min-height: 2.5rem;
@@ -502,7 +502,7 @@
 		padding: 0.45rem 0.65rem;
 	}
 	.status-filters button.active {
-		background: white;
+		background: var(--surface);
 		color: var(--accent);
 		font-weight: 700;
 		box-shadow: var(--shadow);
@@ -514,7 +514,7 @@
 	.secondary-filters {
 		border: 1px solid var(--line);
 		border-radius: 1rem;
-		background: white;
+		background: var(--surface);
 		box-shadow: var(--shadow);
 	}
 	.results-summary {
@@ -527,7 +527,7 @@
 	.empty-state {
 		border: 1px dashed var(--line);
 		border-radius: 1.25rem;
-		background: white;
+		background: var(--surface);
 	}
 	@media (max-width: 359px) {
 		.filter-toolbar {

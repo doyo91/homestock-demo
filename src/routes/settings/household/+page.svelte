@@ -132,7 +132,7 @@
 		padding: 0.65rem 0.75rem;
 		border: 1px solid var(--line);
 		border-radius: 0.5rem;
-		background: white;
+		background: var(--surface);
 		font: inherit;
 	}
 
@@ -148,7 +148,7 @@
 		border: 0;
 		border-radius: 0.6rem;
 		background: var(--accent);
-		color: white;
+		color: var(--on-accent);
 		font: inherit;
 		font-weight: 600;
 		cursor: pointer;

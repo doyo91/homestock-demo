@@ -77,7 +77,7 @@
 		border: 1px solid var(--line);
 		border-left: 3px solid var(--category-tone, var(--line));
 		border-radius: 1rem;
-		background: var(--category-soft, white);
+		background: var(--category-soft, var(--surface));
 		box-shadow: var(--shadow);
 	}
 	.product-button {
@@ -132,7 +132,7 @@
 		flex-shrink: 0;
 		align-items: center;
 		gap: 0.3rem;
-		color: var(--accent);
+		color: var(--success);
 		font-size: 0.75rem;
 		font-weight: 600;
 		white-space: nowrap;

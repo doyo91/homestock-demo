@@ -5,8 +5,10 @@
 		createCategory,
 		updateCategory,
 		toggleCategoryActive,
-		moveCategory
+		moveCategory,
+		setCategoryColor
 	} from '$lib/prototype/state.svelte';
+	import { CATEGORY_PALETTE } from '$lib/prototype/seed';
 
 	const prototypeState = getPrototypeState();
 
@@ -14,6 +16,7 @@
 	let editingId = $state<string | null>(null);
 	let newCategoryName = $state('');
 	let editingName = $state('');
+	let colorPickerId = $state<string | null>(null);
 	let feedback = $state<string | null>(null);
 
 	function toggleActive(id: string) {
@@ -104,6 +107,13 @@
 	function moveCategoryItem(id: string, direction: -1 | 1) {
 		moveCategory(id, direction);
 		feedback = null;
+	}
+
+	function chooseColor(id: string, color: (typeof CATEGORY_PALETTE)[number]['id']) {
+		if (setCategoryColor(id, color)) {
+			colorPickerId = null;
+			feedback = 'Color actualizado.';
+		}
 	}
 </script>
 
@@ -236,6 +246,19 @@
 					</button>
 
 					<button
+						class="color-button"
+						type="button"
+						aria-label={`Cambiar color de ${category.name}`}
+						aria-expanded={colorPickerId === category.id}
+						onclick={() => (colorPickerId = colorPickerId === category.id ? null : category.id)}
+					>
+						<span
+							class="color-preview"
+							style={`background: ${CATEGORY_PALETTE.find((color) => color.id === category.color)?.tone ?? CATEGORY_PALETTE[0].tone}`}
+						></span>
+					</button>
+
+					<button
 						class="toggle"
 						class:enabled={category.active}
 						type="button"
@@ -249,6 +272,23 @@
 					</button>
 				{/if}
 			</div>
+
+			{#if colorPickerId === category.id && editingId !== category.id}
+				<div class="color-picker" aria-label={`Paleta de color para ${category.name}`}>
+					{#each CATEGORY_PALETTE as color (color.id)}
+						<button
+							class="color-choice"
+							class:selected={category.color === color.id}
+							type="button"
+							aria-label={color.name}
+							aria-pressed={category.color === color.id}
+							title={color.name}
+							style={`--swatch: ${color.tone}`}
+							onclick={() => chooseColor(category.id, color.id)}
+						></button>
+					{/each}
+				</div>
+			{/if}
 		{/each}
 	</div>
 
@@ -311,6 +351,58 @@
 		color: var(--muted);
 		font-size: 0.875rem;
 		text-align: center;
+	}
+
+	.color-button {
+		display: grid;
+		width: 2.5rem;
+		height: 2.5rem;
+		flex: 0 0 auto;
+		place-items: center;
+		padding: 0;
+		border: 1px solid var(--line);
+		border-radius: 50%;
+		background: white;
+		cursor: pointer;
+	}
+
+	.color-preview {
+		width: 1rem;
+		height: 1rem;
+		border-radius: 50%;
+		box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
+	}
+
+	.color-picker {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.65rem;
+		margin: 0.25rem 0 0.65rem 2.4rem;
+		padding: 0.7rem 0.75rem;
+		border: 1px solid var(--line);
+		border-radius: 0.75rem;
+		background: white;
+	}
+
+	.color-choice {
+		width: 2rem;
+		height: 2rem;
+		padding: 0;
+		border: 2px solid white;
+		border-radius: 50%;
+		background: var(--swatch);
+		box-shadow: 0 0 0 1px var(--line);
+		cursor: pointer;
+	}
+
+	.color-choice.selected {
+		box-shadow: 0 0 0 2px var(--ink);
+	}
+
+	.color-choice:focus-visible,
+	.color-button:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 3px;
 	}
 
 	.feedback {

@@ -9,6 +9,7 @@
 	import type { InventoryStatus } from '$lib/prototype/types';
 	import InventoryProduct from '$lib/components/inventory/InventoryProduct.svelte';
 	import InventoryProductPanel from '$lib/components/inventory/InventoryProductPanel.svelte';
+	import { getCategoryColor } from '$lib/prototype/seed';
 
 	const prototypeState = getPrototypeState();
 
@@ -114,12 +115,18 @@
 
 	<div class="category-filters" role="group" aria-label="Filtrar por categoría">
 		{#each categoryFilters as category (category.id)}
+			{@const color = 'color' in category ? getCategoryColor(category.color) : null}
 			<button
 				type="button"
 				class:active={categoryFilter === category.id}
+				class:colored={!!color}
 				aria-pressed={categoryFilter === category.id}
-				onclick={() => (categoryFilter = category.id)}>{category.name}</button
+				style={color ? `--category-tone: ${color.tone}; --category-soft: ${color.soft}` : undefined}
+				onclick={() => (categoryFilter = category.id)}
 			>
+				{#if color}<span class="category-dot" aria-hidden="true"></span>{/if}
+				{category.name}
+			</button>
 		{/each}
 	</div>
 
@@ -252,6 +259,20 @@
 		background: var(--accent-soft);
 		color: var(--accent);
 		font-weight: 700;
+	}
+	.category-filters button.colored.active {
+		border-color: var(--category-tone);
+		background: var(--category-soft);
+		color: var(--ink);
+	}
+	.category-dot {
+		display: inline-block;
+		width: 0.5rem;
+		height: 0.5rem;
+		margin-right: 0.35rem;
+		border-radius: 50%;
+		background: var(--category-tone);
+		vertical-align: 0.02rem;
 	}
 	.feedback {
 		padding: 0.75rem;

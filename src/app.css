@@ -6,20 +6,20 @@
 		BlinkMacSystemFont,
 		sans-serif;
 	color: #243b34;
-	background: #f6f7f2;
+	background: #f7f7f6;
 	font-synthesis: none;
 	--ink: #243b34;
 	--muted: #61736a;
 	--accent: #246b50;
 	--accent-soft: #e8f3ec;
-	--line: #dce5dd;
+	--line: #e2e4e1;
 	--surface: #ffffff;
-	--surface-soft: #f0f4ee;
+	--surface-soft: #f1f2f0;
 	--warning: #895900;
 	--warning-soft: #fff3d6;
 	--danger: #ac4242;
 	--danger-soft: #fceceb;
-	--shadow: 0 4px 18px rgb(36 59 52 / 5%);
+	--shadow: 0 4px 18px rgb(48 54 50 / 5%);
 }
 * {
 	box-sizing: border-box;
@@ -27,7 +27,7 @@
 body {
 	margin: 0;
 	min-width: 320px;
-	background: #f6f7f2;
+	background: #f7f7f6;
 	line-height: 1.5;
 }
 button,

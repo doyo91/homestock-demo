@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { resolve } from '$app/paths';
 	import type { PrototypeInventoryItem } from '$lib/prototype/seed';
 	import type { InventoryStatus } from '$lib/prototype/types';
@@ -9,17 +9,26 @@
 		alreadyInShopping,
 		onStatusChange,
 		onAddToShopping,
-		onDeactivate,
+		onDelete,
 		onClose
 	}: {
 		item: PrototypeInventoryItem;
 		alreadyInShopping: boolean;
 		onStatusChange: (id: string, status: InventoryStatus) => void;
 		onAddToShopping: (id: string) => void;
-		onDeactivate: (id: string) => void;
+		onDelete: (id: string) => void;
 		onClose: () => void;
 	} = $props();
 	let dialog: HTMLDialogElement;
+	let cancelDeleteButton = $state<HTMLButtonElement>();
+	let confirmingDelete = $state(false);
+	let deleting = $derived(confirmingDelete || !item.active);
+
+	async function requestDelete() {
+		confirmingDelete = true;
+		await tick();
+		cancelDeleteButton?.focus();
+	}
 	const statuses: { value: InventoryStatus; label: string }[] = [
 		{ value: 'AVAILABLE', label: 'Hay' },
 		{ value: 'LOW', label: 'Poco' },
@@ -29,6 +38,7 @@
 	onMount(() => {
 		const previousOverflow = document.body.style.overflow;
 		dialog.showModal();
+		if (!item.active) cancelDeleteButton?.focus();
 		document.body.style.overflow = 'hidden';
 		return () => {
 			dialog.close();
@@ -51,7 +61,11 @@
 
 <dialog
 	bind:this={dialog}
+	role={deleting ? 'alertdialog' : 'dialog'}
 	aria-labelledby="product-panel-title"
+	aria-describedby={deleting
+		? `delete-description${alreadyInShopping ? ' delete-impact' : ''}`
+		: undefined}
 	onclick={closeOnBackdrop}
 	oncancel={(event) => {
 		event.preventDefault();
@@ -60,39 +74,59 @@
 >
 	<header>
 		<div>
-			<h2 id="product-panel-title">{item.name}</h2>
-			{#if item.replenishmentMode === 'AUTOMATIC'}
+			<h2 id="product-panel-title">{deleting ? `¿Eliminar ${item.name}?` : item.name}</h2>
+			{#if !deleting && item.replenishmentMode === 'AUTOMATIC'}
 				<p>Reposición automática al pasar a No hay</p>
 			{/if}
 		</div>
 		<button class="close" type="button" aria-label="Cerrar panel" onclick={onClose}>×</button>
 	</header>
 
-	<p class="label">Estado del inventario</p>
-	<div class="status-selector" role="group" aria-label="Estado del inventario">
-		{#each statuses as status (status.value)}
-			<button
-				type="button"
-				class:active={item.status === status.value}
-				class:low={status.value === 'LOW'}
-				class:out={status.value === 'OUT'}
-				aria-pressed={item.status === status.value}
-				onclick={() => onStatusChange(item.id, status.value)}
-			>
-				{status.label}
-			</button>
-		{/each}
-	</div>
+	{#if deleting}
+		<div class="delete-confirmation">
+			<p id="delete-description">
+				Se eliminará del inventario y de Sugerencias. Esta acción no se puede deshacer.
+			</p>
+			{#if alreadyInShopping}
+				<p id="delete-impact" class="delete-impact">
+					También se eliminarán sus elementos de Compra, tanto pendientes como marcados como
+					comprados.
+				</p>
+			{/if}
+			<div class="confirmation-actions">
+				<button bind:this={cancelDeleteButton} type="button" onclick={onClose}>Cancelar</button>
+				<button class="confirm-delete" type="button" onclick={() => onDelete(item.id)}
+					>Eliminar definitivamente</button
+				>
+			</div>
+		</div>
+	{:else}
+		<p class="label">Estado del inventario</p>
+		<div class="status-selector" role="group" aria-label="Estado del inventario">
+			{#each statuses as status (status.value)}
+				<button
+					type="button"
+					class:active={item.status === status.value}
+					class:low={status.value === 'LOW'}
+					class:out={status.value === 'OUT'}
+					aria-pressed={item.status === status.value}
+					onclick={() => onStatusChange(item.id, status.value)}
+				>
+					{status.label}
+				</button>
+			{/each}
+		</div>
 
-	<div class="actions">
-		<button type="button" disabled={alreadyInShopping} onclick={() => onAddToShopping(item.id)}>
-			{alreadyInShopping ? 'Ya está en Compra' : 'Añadir a compra'}
-		</button>
-		<a href={resolve('/products/[id]/edit', { id: item.id })}>Editar producto</a>
-	</div>
-	<div class="deactivate">
-		<button type="button" onclick={() => onDeactivate(item.id)}>Desactivar producto</button>
-	</div>
+		<div class="actions">
+			<button type="button" disabled={alreadyInShopping} onclick={() => onAddToShopping(item.id)}>
+				{alreadyInShopping ? 'Ya está en Compra' : 'Añadir a compra'}
+			</button>
+			<a href={resolve('/products/[id]/edit', { id: item.id })}>Editar producto</a>
+		</div>
+		<div class="delete-action">
+			<button type="button" onclick={requestDelete}>Eliminar producto</button>
+		</div>
+	{/if}
 </dialog>
 
 <style>
@@ -206,12 +240,12 @@
 		background: var(--surface-soft);
 		cursor: default;
 	}
-	.deactivate {
+	.delete-action {
 		margin-top: 1.25rem;
 		padding-top: 0.75rem;
 		border-top: 1px solid var(--line);
 	}
-	.deactivate button {
+	.delete-action button {
 		width: 100%;
 		min-height: 2.75rem;
 		padding: 0.75rem;
@@ -220,9 +254,41 @@
 		background: transparent;
 		color: var(--danger);
 	}
-	.deactivate button:hover {
+	.delete-action button:hover {
 		background: var(--danger-soft);
 	}
+	.delete-confirmation p {
+		margin: 1rem 0;
+		color: var(--muted);
+		line-height: 1.6;
+	}
+	.delete-confirmation .delete-impact {
+		padding: 0.85rem;
+		border-radius: 0.75rem;
+		background: var(--danger-soft);
+		color: var(--danger);
+	}
+	.confirmation-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		margin-top: 1.5rem;
+	}
+	.confirmation-actions button {
+		flex: 1 1 10rem;
+		min-height: 2.75rem;
+		padding: 0.75rem;
+		border: 1px solid var(--line);
+		border-radius: 0.75rem;
+		background: var(--surface-soft);
+		color: var(--ink);
+	}
+	.confirmation-actions .confirm-delete {
+		border-color: var(--danger);
+		background: var(--danger);
+		color: var(--on-accent);
+	}
+
 	@media (min-width: 640px) {
 		dialog {
 			inset: 0;

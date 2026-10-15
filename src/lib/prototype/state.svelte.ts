@@ -36,10 +36,10 @@ export function resetPrototype(): void {
 	state = resetPrototypeState();
 }
 
-export function deactivateProduct(productId: string): boolean {
-	const product = getProductById(productId);
-	if (!product || !product.active) return false;
-	product.active = false;
+export function deleteProduct(productId: string): boolean {
+	if (!getProductById(productId)) return false;
+	state.inventory = state.inventory.filter((product) => product.id !== productId);
+	state.shopping = state.shopping.filter((item) => item.productId !== productId);
 	persistPrototypeState();
 	return true;
 }

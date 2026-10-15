@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createPrototypeSeed } from './seed';
+import { deleteProduct, resetPrototype } from './state.svelte';
 import { loadPrototypeState, savePrototypeState } from './storage';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -49,5 +50,24 @@ describe('Migración de colores de categoría', () => {
 			'lavender',
 			'rose'
 		]);
+	});
+});
+
+describe('Persistencia de la eliminación definitiva', () => {
+	it('no recupera el producto ni sus pendientes al recargar', () => {
+		let stored: string | null = null;
+		vi.stubGlobal('window', {
+			localStorage: {
+				getItem: () => stored,
+				setItem: (_key: string, value: string) => {
+					stored = value;
+				}
+			}
+		});
+		resetPrototype();
+		expect(deleteProduct('3')).toBe(true);
+		const restored = loadPrototypeState();
+		expect(restored.inventory.some((product) => product.id === '3')).toBe(false);
+		expect(restored.shopping.some((item) => item.productId === '3')).toBe(false);
 	});
 });

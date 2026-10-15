@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
 	changeInventoryStatus,
-	deactivateProduct,
+	deleteProduct,
 	addProductToShopping,
 	addOneOffShoppingItem,
 	purchaseShoppingItem,
@@ -823,33 +823,62 @@ describe('prototype state - Ubicaciones', () => {
 	});
 });
 
-describe('Desactivar productos', () => {
+describe('Eliminar productos', () => {
 	beforeEach(() => resetPrototype());
 
-	it('conserva la compra pendiente y permite comprar y deshacer sin reactivar el producto', () => {
+	it('borra el producto y permite crear de nuevo el mismo nombre normalizado', () => {
 		const state = getPrototypeState();
-		const product = state.inventory.find((item) => item.id === '3')!;
-		const shopping = state.shopping.find((item) => item.productId === product.id)!;
-		expect(deactivateProduct(product.id)).toBe(true);
-		expect(product.active).toBe(false);
-		expect(state.shopping.find((item) => item.id === shopping.id)?.status).toBe('PENDING');
-		expect(purchaseShoppingItem(shopping.id)).toBe(true);
-		expect(undoShoppingPurchase(shopping.id)).toBe(true);
-		expect(product.active).toBe(false);
-		expect(product.status).toBe('OUT');
+		expect(deleteProduct('2')).toBe(true);
+		expect(state.inventory.some((product) => product.id === '2')).toBe(false);
+		const id = createProduct('  HUEVOS  ', 'AVAILABLE', null, null, 'MANUAL');
+		expect(id).not.toBeNull();
+		expect(id).not.toBe('2');
 	});
 
-	it('impide nuevas transiciones y reposiciones automáticas de productos desactivados', () => {
+	it('borra los pendientes vinculados y conserva los artículos independientes, incluso con el mismo nombre', () => {
 		const state = getPrototypeState();
-		expect(deactivateProduct('1')).toBe(true);
+		addOneOffShoppingItem('Papel higiénico');
+		expect(deleteProduct('3')).toBe(true);
+		expect(state.shopping.some((item) => item.productId === '3')).toBe(false);
+		expect(
+			state.shopping.some((item) => item.name === 'Papel higiénico' && item.productId === null)
+		).toBe(true);
+		expect(state.shopping.some((item) => item.name === 'Pan')).toBe(true);
+		expect(state.inventory.some((product) => product.id === '1')).toBe(true);
+	});
+
+	it('también elimina los comprados vinculados sin dejar una acción Deshacer sobre un producto inexistente', () => {
+		const state = getPrototypeState();
+		const item = state.shopping.find((candidate) => candidate.productId === '3')!;
+		expect(purchaseShoppingItem(item.id)).toBe(true);
+		expect(deleteProduct('3')).toBe(true);
+		expect(state.shopping.some((candidate) => candidate.id === item.id)).toBe(false);
+		expect(undoShoppingPurchase(item.id)).toBe(false);
+	});
+
+	it('retira productos sugeridos e impide generar nuevas reposiciones después de borrarlos', () => {
+		const state = getPrototypeState();
+		expect(deleteProduct('1')).toBe(true);
+		expect(state.inventory.some((product) => product.id === '1')).toBe(false);
 		expect(changeInventoryStatus('1', 'OUT')).toBe(false);
+		expect(addProductToShopping('1')).toBe(false);
 		expect(state.shopping.some((item) => item.productId === '1')).toBe(false);
-		expect(state.inventory.find((item) => item.id === '1')?.status).toBe('LOW');
 	});
 
-	it('rechaza identificadores inexistentes y desactivaciones repetidas', () => {
-		expect(deactivateProduct('missing')).toBe(false);
-		expect(deactivateProduct('1')).toBe(true);
-		expect(deactivateProduct('1')).toBe(false);
+	it('permite borrar productos desactivados por versiones anteriores', () => {
+		const state = getPrototypeState();
+		state.inventory[0].active = false;
+		expect(deleteProduct(state.inventory[0].id)).toBe(true);
+		expect(state.inventory.some((product) => product.name === 'Leche')).toBe(false);
+		expect(createProduct('Leche', 'LOW', null, null, 'MANUAL')).not.toBeNull();
+	});
+
+	it('rechaza identificadores inexistentes y eliminaciones repetidas sin modificar otros datos', () => {
+		const state = getPrototypeState();
+		const before = JSON.stringify(state);
+		expect(deleteProduct('missing')).toBe(false);
+		expect(JSON.stringify(state)).toBe(before);
+		expect(deleteProduct('1')).toBe(true);
+		expect(deleteProduct('1')).toBe(false);
 	});
 });

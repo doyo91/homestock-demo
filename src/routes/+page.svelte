@@ -5,7 +5,7 @@
 	import {
 		changeInventoryStatus,
 		addProductToShopping,
-		deactivateProduct
+		deleteProduct
 	} from '$lib/prototype/state.svelte';
 	import type { InventoryStatus } from '$lib/prototype/types';
 	import InventoryProduct from '$lib/components/inventory/InventoryProduct.svelte';
@@ -34,13 +34,16 @@
 	];
 
 	let inventory = $derived(prototypeState.inventory.filter((product) => product.active));
+	let previouslyHidden = $derived(prototypeState.inventory.filter((product) => !product.active));
 	let categoryFilters = $derived([
 		{ id: 'ALL', name: 'Todas' },
 		...prototypeState.categories.filter((category) => category.active),
 		{ id: 'NONE', name: 'Sin categoría' }
 	]);
 	const feedback = createFeedback();
-	let selectedProduct = $derived(inventory.find((item) => item.id === selectedProductId));
+	let selectedProduct = $derived(
+		prototypeState.inventory.find((item) => item.id === selectedProductId)
+	);
 
 	let filteredInventory = $derived(
 		inventory.filter((item) => {
@@ -79,14 +82,14 @@
 		selectedProductId = null;
 	}
 
-	function handleDeactivate(id: string) {
-		const product = inventory.find((item) => item.id === id);
-		const deactivated = deactivateProduct(id);
+	function handleDelete(id: string) {
+		const product = prototypeState.inventory.find((item) => item.id === id);
+		const deleted = deleteProduct(id);
 		feedback.show(
-			deactivated
-				? `${product?.name ?? 'Producto'} desactivado.`
-				: 'No se ha podido desactivar el producto.',
-			!deactivated
+			deleted
+				? `${product?.name ?? 'Producto'} eliminado.`
+				: 'No se ha podido eliminar el producto.',
+			!deleted
 		);
 		selectedProductId = null;
 	}
@@ -224,6 +227,26 @@
 			<button type="button" onclick={clearFilters}> Limpiar filtros </button>
 		</div>
 	{/if}
+
+	{#if previouslyHidden.length > 0}
+		<details class="previously-hidden">
+			<summary>Productos ocultos de la versión anterior ({previouslyHidden.length})</summary>
+			<p>
+				Puedes eliminarlos definitivamente para liberar sus nombres. Se pedirá confirmación antes de
+				borrar.
+			</p>
+			{#each previouslyHidden as product (product.id)}
+				<div class="hidden-product">
+					<span>{product.name}</span>
+					<button
+						type="button"
+						aria-label={`Eliminar ${product.name}`}
+						onclick={() => (selectedProductId = product.id)}>Eliminar</button
+					>
+				</div>
+			{/each}
+		</details>
+	{/if}
 </section>
 
 {#if selectedProduct}
@@ -234,12 +257,46 @@
 		)}
 		onStatusChange={handleStatusChange}
 		onAddToShopping={handleAddToShopping}
-		onDeactivate={handleDeactivate}
+		onDelete={handleDelete}
 		onClose={() => (selectedProductId = null)}
 	/>
 {/if}
 
 <style>
+	.previously-hidden {
+		margin-top: 1.5rem;
+		padding: 1rem;
+		border: 1px solid var(--line);
+		border-radius: 1rem;
+		background: var(--surface);
+	}
+	.previously-hidden summary {
+		padding: 0.5rem 0;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.previously-hidden p {
+		color: var(--muted);
+		font-size: 0.85rem;
+	}
+	.hidden-product {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+	.hidden-product span {
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+	.hidden-product button {
+		min-height: 2.75rem;
+		padding: 0.5rem;
+		border: 0;
+		background: transparent;
+		color: var(--danger);
+		cursor: pointer;
+	}
 	.category-filters {
 		display: flex;
 		gap: 0.5rem;

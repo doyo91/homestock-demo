@@ -1,4 +1,5 @@
 import type { InventoryStatus } from '$lib/prototype/types';
+import { CATEGORY_PALETTE, type CategoryColor } from './seed';
 import { loadPrototypeState, resetPrototypeState, savePrototypeState } from './storage';
 
 let state = $state(loadPrototypeState());
@@ -361,7 +362,8 @@ export function createCategory(name: string): string | null {
 	state.categories.push({
 		id: categoryId,
 		name: trimmedName,
-		active: true
+		active: true,
+		color: CATEGORY_PALETTE[state.categories.length % CATEGORY_PALETTE.length].id
 	});
 
 	persistPrototypeState();
@@ -396,6 +398,18 @@ export function updateCategory(categoryId: string, name: string): boolean {
 
 	persistPrototypeState();
 
+	return true;
+}
+
+export function setCategoryColor(categoryId: string, color: CategoryColor): boolean {
+	const category = state.categories.find((item) => item.id === categoryId);
+
+	if (!category || !CATEGORY_PALETTE.some((item) => item.id === color)) {
+		return false;
+	}
+
+	category.color = color;
+	persistPrototypeState();
 	return true;
 }
 

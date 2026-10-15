@@ -15,6 +15,7 @@ import {
 	updateCategory,
 	toggleCategoryActive,
 	moveCategory,
+	setCategoryColor,
 	createLocation,
 	updateLocation,
 	toggleLocationActive,
@@ -582,6 +583,15 @@ describe('prototype state - Categorías', () => {
 			const categoryId = createCategory(existingName.toUpperCase());
 
 			expect(categoryId).toBeNull();
+		});
+	});
+
+	describe('setCategoryColor', () => {
+		it('guarda el color elegido en la categoría', () => {
+			const category = getPrototypeState().categories[0];
+
+			expect(setCategoryColor(category.id, 'teal')).toBe(true);
+			expect(category.color).toBe('teal');
 		});
 	});
 

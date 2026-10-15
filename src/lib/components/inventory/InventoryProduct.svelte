@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PrototypeInventoryItem } from '$lib/prototype/seed';
 	import { getCategoryById, getLocationById } from '$lib/prototype/state.svelte';
+	import { getCategoryColor } from '$lib/prototype/seed';
 
 	let {
 		item,
@@ -10,9 +11,9 @@
 		onOpen: (id: string) => void;
 	} = $props();
 
-	let categoryName = $derived(
-		item.categoryId ? (getCategoryById(item.categoryId)?.name ?? 'Sin categoría') : 'Sin categoría'
-	);
+	let category = $derived(item.categoryId ? getCategoryById(item.categoryId) : undefined);
+	let categoryName = $derived(category?.name ?? 'Sin categoría');
+	let categoryColor = $derived(category ? getCategoryColor(category.color) : null);
 	let locationName = $derived(
 		item.locationId ? (getLocationById(item.locationId)?.name ?? 'Sin ubicación') : 'Sin ubicación'
 	);
@@ -21,7 +22,12 @@
 	);
 </script>
 
-<article class="product">
+<article
+	class="product"
+	style={categoryColor
+		? `--category-tone: ${categoryColor.tone}; --category-soft: ${categoryColor.soft}`
+		: undefined}
+>
 	<button
 		class="product-button"
 		type="button"
@@ -69,8 +75,9 @@
 <style>
 	.product {
 		border: 1px solid var(--line);
+		border-left: 3px solid var(--category-tone, var(--line));
 		border-radius: 1rem;
-		background: white;
+		background: var(--category-soft, white);
 		box-shadow: var(--shadow);
 	}
 	.product-button {
@@ -89,7 +96,8 @@
 		cursor: pointer;
 	}
 	.product-button:hover {
-		background: var(--surface-soft);
+		background: var(--category-soft, var(--surface-soft));
+		filter: brightness(0.98);
 	}
 	.product-button:focus-visible {
 		outline: 2px solid var(--accent);

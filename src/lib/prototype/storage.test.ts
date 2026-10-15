@@ -30,3 +30,24 @@ describe('Persistencia de productos activos', () => {
 		expect(loadPrototypeState().inventory[0].active).toBe(false);
 	});
 });
+
+describe('Migración de colores de categoría', () => {
+	it('asigna colores por defecto a categorías guardadas sin color', () => {
+		const legacy = createPrototypeSeed();
+		legacy.categories = legacy.categories.map(({ id, name, active }) => ({
+			id,
+			name,
+			active
+		})) as typeof legacy.categories;
+		const serialized = JSON.stringify(legacy);
+		vi.stubGlobal('window', { localStorage: { getItem: () => serialized } });
+
+		const categories = loadPrototypeState().categories;
+		expect(categories.map((category) => category.color)).toEqual([
+			'sage',
+			'blue',
+			'lavender',
+			'rose'
+		]);
+	});
+});

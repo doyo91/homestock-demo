@@ -332,7 +332,7 @@
 		padding: 0 0.9rem;
 		border-radius: 999px;
 		background: var(--accent);
-		color: white;
+		color: var(--on-accent);
 		font-weight: 600;
 		text-decoration: none;
 	}
@@ -424,14 +424,14 @@
 		height: 1.5rem;
 		flex: 0 0 auto;
 		place-items: center;
-		border: 1.5px solid #aaa;
+		border: 1.5px solid var(--muted);
 		border-radius: 50%;
 	}
 
 	.check.checked {
 		border-color: var(--accent);
 		background: var(--accent);
-		color: white;
+		color: var(--on-accent);
 		font-size: 0.8rem;
 	}
 
@@ -535,7 +535,7 @@
 		padding: 0.45rem 0.75rem;
 		border: 1px solid var(--line);
 		border-radius: 999px;
-		background: white;
+		background: var(--surface);
 		font: inherit;
 		font-size: 0.8rem;
 		font-weight: 600;
@@ -574,7 +574,7 @@
 		border: 0;
 		border-radius: 0.65rem;
 		background: var(--accent);
-		color: white;
+		color: var(--on-accent);
 		font: inherit;
 		font-weight: 600;
 		cursor: pointer;
@@ -599,7 +599,7 @@
 		width: min(100%, 26rem);
 		padding: 1.25rem;
 		border-radius: 0.875rem;
-		background: white;
+		background: var(--surface);
 		box-shadow: 0 1rem 3rem rgb(0 0 0 / 20%);
 	}
 
@@ -632,14 +632,14 @@
 
 	.secondary-button {
 		border: 1px solid var(--line);
-		background: white;
+		background: var(--surface);
 		color: var(--ink);
 	}
 
 	.confirm-button {
 		border: 1px solid var(--ink);
 		background: var(--accent);
-		color: white;
+		color: var(--on-accent);
 	}
 
 	h1 {
@@ -659,7 +659,7 @@
 		padding: 1.15rem;
 		border: 1px solid var(--line);
 		border-radius: 1.25rem;
-		background: white;
+		background: var(--surface);
 		box-shadow: var(--shadow);
 		margin-bottom: 1rem;
 	}
@@ -677,7 +677,7 @@
 		overflow-wrap: anywhere;
 	}
 	.check {
-		border-color: #a7bdb0;
+		border-color: var(--muted);
 		border-radius: 0.5rem;
 	}
 	.suggestions {

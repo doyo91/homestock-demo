@@ -163,7 +163,7 @@
 		padding: 0.65rem 0.75rem;
 		border: 1px solid var(--line);
 		border-radius: 0.5rem;
-		background: white;
+		background: var(--surface);
 		font: inherit;
 	}
 
@@ -186,7 +186,7 @@
 	}
 
 	.status-selector button.active {
-		background: white;
+		background: var(--surface);
 		color: var(--ink);
 		font-weight: 600;
 		box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
@@ -226,7 +226,7 @@
 		border: 0;
 		border-radius: 0.65rem;
 		background: var(--accent);
-		color: white;
+		color: var(--on-accent);
 		font-weight: 600;
 		cursor: pointer;
 	}
@@ -241,14 +241,14 @@
 		padding: 1.2rem;
 		border: 1px solid var(--line);
 		border-radius: 1.25rem;
-		background: white;
+		background: var(--surface);
 		box-shadow: var(--shadow);
 	}
 	input[type='text'],
 	select {
 		border-radius: 0.8rem;
 		min-height: 3rem;
-		background: #fcfdfb;
+		background: var(--surface-soft);
 	}
 	.status-selector {
 		border-radius: 0.9rem;
@@ -258,8 +258,8 @@
 		min-height: 2.75rem;
 	}
 	.status-selector button.active {
-		background: var(--accent-soft);
-		color: var(--accent);
+		background: var(--success-soft);
+		color: var(--success);
 	}
 	.status-selector button:nth-child(2).active {
 		background: var(--warning-soft);
@@ -277,7 +277,7 @@
 	}
 	.radio-option:has(input:checked) {
 		background: var(--accent-soft);
-		border-color: #9dbfa9;
+		border-color: var(--accent);
 	}
 	.save-button {
 		border-radius: 0.85rem;

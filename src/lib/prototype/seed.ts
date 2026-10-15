@@ -13,20 +13,24 @@ export interface PrototypeCategory {
 }
 
 export const CATEGORY_PALETTE = [
-	{ id: 'sage', name: 'Salvia', tone: '#54806f', soft: '#edf4f0' },
-	{ id: 'blue', name: 'Azul', tone: '#4d7898', soft: '#edf3f7' },
-	{ id: 'lavender', name: 'Lavanda', tone: '#78699a', soft: '#f1eef6' },
-	{ id: 'rose', name: 'Rosa', tone: '#a85f79', soft: '#f7eef1' },
-	{ id: 'coral', name: 'Coral', tone: '#b96d58', soft: '#f8f0ec' },
-	{ id: 'amber', name: 'Mostaza', tone: '#907536', soft: '#f6f2e7' },
-	{ id: 'teal', name: 'Verde azulado', tone: '#43817e', soft: '#edf5f4' },
-	{ id: 'slate', name: 'Pizarra', tone: '#667481', soft: '#eff2f4' }
+	{ id: 'sage', name: 'Salvia', tone: '#54806f' },
+	{ id: 'blue', name: 'Azul', tone: '#4d7898' },
+	{ id: 'lavender', name: 'Lavanda', tone: '#78699a' },
+	{ id: 'rose', name: 'Rosa', tone: '#a85f79' },
+	{ id: 'coral', name: 'Coral', tone: '#b96d58' },
+	{ id: 'amber', name: 'Mostaza', tone: '#907536' },
+	{ id: 'teal', name: 'Verde azulado', tone: '#43817e' },
+	{ id: 'slate', name: 'Pizarra', tone: '#667481' }
 ] as const;
 
 export type CategoryColor = (typeof CATEGORY_PALETTE)[number]['id'];
 
 export function getCategoryColor(color: CategoryColor | undefined) {
-	return CATEGORY_PALETTE.find((item) => item.id === color) ?? CATEGORY_PALETTE[0];
+	const category = CATEGORY_PALETTE.find((item) => item.id === color) ?? CATEGORY_PALETTE[0];
+	return {
+		...category,
+		soft: `color-mix(in srgb, ${category.tone} var(--category-tint), var(--surface))`
+	};
 }
 
 export interface PrototypeLocation {

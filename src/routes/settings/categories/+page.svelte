@@ -341,7 +341,7 @@
 		border: 0;
 		border-radius: 50%;
 		background: var(--accent);
-		color: white;
+		color: var(--on-accent);
 		font-size: 1.6rem;
 		cursor: pointer;
 	}
@@ -362,7 +362,7 @@
 		padding: 0;
 		border: 1px solid var(--line);
 		border-radius: 50%;
-		background: white;
+		background: var(--surface);
 		cursor: pointer;
 	}
 
@@ -381,14 +381,14 @@
 		padding: 0.7rem 0.75rem;
 		border: 1px solid var(--line);
 		border-radius: 0.75rem;
-		background: white;
+		background: var(--surface);
 	}
 
 	.color-choice {
 		width: 2rem;
 		height: 2rem;
 		padding: 0;
-		border: 2px solid white;
+		border: 2px solid var(--surface);
 		border-radius: 50%;
 		background: var(--swatch);
 		box-shadow: 0 0 0 1px var(--line);
@@ -430,9 +430,9 @@
 	.editor {
 		margin-bottom: 1.25rem;
 		padding: 1rem;
-		border: 1px solid #e5e5e5;
+		border: 1px solid var(--line);
 		border-radius: 0.75rem;
-		background: #fafafa;
+		background: var(--surface-soft);
 	}
 
 	.editor label {
@@ -449,7 +449,7 @@
 		padding: 0.6rem 0.7rem;
 		border: 1px solid var(--line);
 		border-radius: 0.5rem;
-		background: white;
+		background: var(--surface);
 		font: inherit;
 	}
 
@@ -470,14 +470,14 @@
 
 	.secondary-button {
 		border: 1px solid var(--line);
-		background: white;
+		background: var(--surface);
 		color: var(--ink);
 	}
 
 	.primary-button {
 		border: 1px solid var(--ink);
 		background: var(--accent);
-		color: white;
+		color: var(--on-accent);
 	}
 
 	.primary-button:disabled {
@@ -573,7 +573,7 @@
 		width: 1.2rem;
 		height: 1.2rem;
 		border-radius: 50%;
-		background: white;
+		background: var(--muted);
 		transition: transform 0.15s ease;
 	}
 
@@ -582,6 +582,7 @@
 	}
 
 	.toggle.enabled span {
+		background: var(--on-accent);
 		transform: translateX(1.15rem);
 	}
 
@@ -616,7 +617,7 @@
 	}
 
 	.text-button:disabled {
-		color: #aaa;
+		color: var(--muted);
 		cursor: default;
 	}
 

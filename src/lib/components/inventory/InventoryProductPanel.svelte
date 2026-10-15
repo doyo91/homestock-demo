@@ -108,12 +108,12 @@
 		overflow-y: auto;
 		border: 1px solid var(--line);
 		border-radius: 1.5rem 1.5rem 0 0;
-		background: white;
+		background: var(--surface);
 		color: var(--ink);
-		box-shadow: 0 -8px 32px rgb(36 59 52 / 15%);
+		box-shadow: 0 -8px 32px rgb(0 0 0 / 15%);
 	}
 	dialog::backdrop {
-		background: rgb(20 35 29 / 40%);
+		background: rgb(0 0 0 / 40%);
 	}
 	header {
 		display: flex;
@@ -171,8 +171,8 @@
 		color: var(--muted);
 	}
 	.status-selector button.active {
-		background: var(--accent-soft);
-		color: var(--accent);
+		background: var(--success-soft);
+		color: var(--success);
 		font-weight: 700;
 	}
 	.status-selector button.low.active {
@@ -196,7 +196,7 @@
 		padding: 0.75rem;
 		border: 1px solid var(--line);
 		border-radius: 0.75rem;
-		background: white;
+		background: var(--surface);
 		color: var(--ink);
 		text-align: center;
 		text-decoration: none;

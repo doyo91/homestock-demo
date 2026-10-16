@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createFeedback } from '$lib/prototype/feedback.svelte';
 	import { resolve } from '$app/paths';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { getPrototypeState, getLocationById } from '$lib/prototype/state.svelte';
 	import {
 		changeInventoryStatus,
@@ -19,6 +20,23 @@
 	let statusFilter = $state<InventoryStatus | 'ALL'>('ALL');
 	let categoryFilter = $state('ALL');
 	let locationFilter = $state('ALL');
+	let newProductQuery = $derived.by((): '' | `?${string}` => {
+		const values: Record<string, string> = {};
+		if (
+			prototypeState.categories.some(
+				(category) => category.active && category.id === categoryFilter
+			)
+		) {
+			values.categoryId = categoryFilter;
+		}
+		if (
+			prototypeState.locations.some((location) => location.active && location.id === locationFilter)
+		) {
+			values.locationId = locationFilter;
+		}
+		const query = new SvelteURLSearchParams(values).toString();
+		return query ? `?${query}` : '';
+	});
 
 	let filtersOpen = $state(false);
 	let selectedProductId = $state<string | null>(null);
@@ -56,8 +74,7 @@
 				(categoryFilter === 'NONE' ? !item.categoryId : item.categoryId === categoryFilter);
 
 			const matchesLocation =
-				locationFilter === 'ALL' ||
-				(location && location.name === locationFilter && location.active);
+				locationFilter === 'ALL' || (location && location.id === locationFilter && location.active);
 
 			return matchesStatus && matchesCategory && matchesLocation;
 		})
@@ -112,7 +129,11 @@
 			<h1>Inventario</h1>
 		</div>
 
-		<a class="add-button" href={resolve('/products/new')} aria-label="Añadir producto">
+		<a
+			class="add-button"
+			href={resolve(`/products/new${newProductQuery}`)}
+			aria-label="Añadir producto"
+		>
 			<span aria-hidden="true">+</span>
 		</a>
 	</header>
@@ -176,7 +197,7 @@
 					<option value="ALL">Todas</option>
 
 					{#each prototypeState.locations.filter((location) => location.active) as location (location.id)}
-						<option value={location.name}>
+						<option value={location.id}>
 							{location.name}
 						</option>
 					{/each}
@@ -218,7 +239,9 @@
 		<div class="empty-state">
 			<p>Todavía no tienes productos en el inventario.</p>
 
-			<a class="empty-action" href={resolve('/products/new')}> Añadir producto </a>
+			<a class="empty-action" href={resolve(`/products/new${newProductQuery}`)}>
+				Añadir producto
+			</a>
 		</div>
 	{:else if filteredInventory.length === 0}
 		<div class="empty-state">

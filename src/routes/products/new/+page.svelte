@@ -1,18 +1,34 @@
 <script lang="ts">
 	import { createFeedback } from '$lib/prototype/feedback.svelte';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import ProductForm from '$lib/components/ProductForm.svelte';
-	import { createProduct } from '$lib/prototype/state.svelte';
+	import {
+		createProduct,
+		getActiveCategories,
+		getActiveLocations
+	} from '$lib/prototype/state.svelte';
 
 	const feedback = createFeedback();
+	let initialValue = $derived.by(() => {
+		const categoryId = page.url.searchParams.get('categoryId');
+		const locationId = page.url.searchParams.get('locationId');
+		return {
+			categoryId: getActiveCategories().find((category) => category.id === categoryId)?.id ?? '',
+			locationId: getActiveLocations().find((location) => location.id === locationId)?.id ?? ''
+		};
+	});
 
-	function saveProduct(value: {
-		name: string;
-		status: 'AVAILABLE' | 'LOW' | 'OUT';
-		categoryId: string;
-		locationId: string;
-		replenishmentMode: 'MANUAL' | 'AUTOMATIC';
-	}) {
+	function saveProduct(
+		value: {
+			name: string;
+			status: 'AVAILABLE' | 'LOW' | 'OUT';
+			categoryId: string;
+			locationId: string;
+			replenishmentMode: 'MANUAL' | 'AUTOMATIC';
+		},
+		addAnother: boolean
+	): boolean {
 		const productId = createProduct(
 			value.name,
 			value.status,
@@ -23,11 +39,15 @@
 
 		if (productId) {
 			feedback.show('Producto creado correctamente.');
-			setTimeout(() => {
-				window.location.href = resolve('/');
-			}, 500);
+			if (!addAnother) {
+				setTimeout(() => {
+					window.location.href = resolve('/');
+				}, 500);
+			}
+			return true;
 		} else {
 			feedback.show('Ya existe un producto con ese nombre.', true);
+			return false;
 		}
 	}
 </script>
@@ -58,7 +78,7 @@
 		</div>
 	{/if}
 
-	<ProductForm onsubmit={saveProduct} />
+	<ProductForm {initialValue} submitLabel="Guardar" allowAddAnother onsubmit={saveProduct} />
 </section>
 
 <style>

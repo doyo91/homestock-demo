@@ -126,7 +126,7 @@
 			</p>
 			<p>
 				Guardar y añadir otro conserva categoría y ubicación, vacía el nombre y restablece cantidad
-				1, límite de Poco 1 y reposición Manual. Los filtros activos precargan categoría y
+				1, límite de reposición 1 y reposición Manual. Los filtros activos precargan categoría y
 				ubicación.
 			</p>
 			<p>
@@ -141,22 +141,24 @@
 		<details>
 			<summary>Reposición automática y sugerencias</summary>
 			<p>
-				Un automático se añade a Compra al alcanzar o bajar de su límite de reposición (por defecto,
-				0). Ese límite puede ser igual o inferior al de Poco. No se duplican productos que ya están
-				en la lista.
+				El campo <strong>Reponer cuando queden</strong> tiene valor inicial 1. Ese mismo límite define
+				Poco y cuándo reponer: los automáticos se añaden a Compra; los manuales aparecen en Sugerencias,
+				también cuando llegan a 0.
 			</p>
 			<p>
-				Los productos en <strong>Poco</strong> que no están en Compra aparecen en Sugerencias. Al añadirlos
-				puedes indicar cuánto comprar y corregir cuánto queda en casa; la compra aún no se suma.
+				Los productos en Poco o No hay que aún no están en Compra se muestran en Sugerencias. Al
+				añadirlos puedes indicar cuánto comprar y corregir cuánto queda en casa; la compra aún no se
+				suma. No se duplican productos que ya están en la lista.
 			</p>
+
 			<p>
-				Si ajustas existencias o límites y dejan de necesitar reposición, se retira su pendiente
+				Si ajustas existencias o el límite y dejan de necesitar reposición, se retira su pendiente
 				automático. Los pendientes añadidos manualmente se conservan.
 			</p>
 			<p>
 				Quitar un pendiente con la papelera no cambia sus existencias. No se vuelve a añadir
-				automáticamente hasta que cambie el recuento o la configuración; si está en Poco, se puede
-				añadir desde Sugerencias.
+				automáticamente hasta que cambie el recuento o la configuración; si está en Poco o No hay,
+				se puede añadir desde Sugerencias.
 			</p>
 		</details>
 		<details>
@@ -179,7 +181,7 @@
 			</p>
 			<p>
 				Confirmar o finalizar una compra no genera inmediatamente otra reposición aunque el producto
-				siga bajo mínimos. La reposición se revisa al cambiar después las existencias o los límites.
+				siga bajo mínimos. La reposición se revisa al cambiar después las existencias o el límite.
 			</p>
 			<p>Finalizar retira los comprados; los pendientes se conservan para otra ocasión.</p>
 		</details>

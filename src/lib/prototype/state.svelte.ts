@@ -9,6 +9,15 @@ export function getPrototypeState() {
 	return state;
 }
 
+export function getShoppingSuggestions() {
+	return state.inventory.filter(
+		(product) =>
+			product.active &&
+			product.quantity <= product.lowThreshold &&
+			!state.shopping.some((item) => item.productId === product.id)
+	);
+}
+
 export function getActiveCategories() {
 	return state.categories.filter((category) => category.active);
 }
@@ -60,7 +69,7 @@ function shoppingEntry(product: PrototypeInventoryItem, source: 'AUTO' | 'MANUAL
 function syncAutomaticShopping(product: PrototypeInventoryItem): void {
 	if (!product.active || product.quantityNeedsReview) return;
 	const shouldReplenish =
-		product.replenishmentMode === 'AUTOMATIC' && product.quantity <= product.autoThreshold;
+		product.replenishmentMode === 'AUTOMATIC' && product.quantity <= product.lowThreshold;
 	if (shouldReplenish) {
 		if (!state.shopping.some((item) => item.productId === product.id)) {
 			state.shopping.push(shoppingEntry(product, 'AUTO'));
@@ -148,7 +157,6 @@ export function saveShoppingItemAsProduct(
 		locationId: null,
 		quantity: existingQuantity,
 		lowThreshold: 1,
-		autoThreshold: 0,
 		quantityNeedsReview: false,
 		status: inventoryStatus(existingQuantity, 1),
 		active: true,
@@ -242,16 +250,13 @@ export function createProduct(
 	categoryId: string | null,
 	locationId: string | null,
 	replenishmentMode: 'MANUAL' | 'AUTOMATIC',
-	lowThreshold = 1,
-	autoThreshold = 0
+	lowThreshold = 1
 ): string | null {
 	const trimmedName = name.trim();
 	if (
 		!trimmedName ||
 		!validQuantity(quantity) ||
 		!validQuantity(lowThreshold) ||
-		!validQuantity(autoThreshold) ||
-		autoThreshold > lowThreshold ||
 		state.inventory.some(
 			(item) => item.name.trim().toLocaleLowerCase() === trimmedName.toLocaleLowerCase()
 		)
@@ -264,7 +269,6 @@ export function createProduct(
 		locationId: locationId || null,
 		quantity,
 		lowThreshold,
-		autoThreshold,
 		quantityNeedsReview: false,
 		status: inventoryStatus(quantity, lowThreshold),
 		active: true,
@@ -283,8 +287,7 @@ export function updateProduct(
 	categoryId: string | null,
 	locationId: string | null,
 	replenishmentMode: 'MANUAL' | 'AUTOMATIC',
-	lowThreshold = 1,
-	autoThreshold = 0
+	lowThreshold = 1
 ): boolean {
 	const product = getProductById(productId);
 	const trimmedName = name.trim();
@@ -293,8 +296,6 @@ export function updateProduct(
 		!trimmedName ||
 		!validQuantity(quantity) ||
 		!validQuantity(lowThreshold) ||
-		!validQuantity(autoThreshold) ||
-		autoThreshold > lowThreshold ||
 		state.inventory.some(
 			(item) =>
 				item.id !== productId &&
@@ -305,14 +306,12 @@ export function updateProduct(
 	const changed =
 		product.quantity !== quantity ||
 		product.lowThreshold !== lowThreshold ||
-		product.autoThreshold !== autoThreshold ||
 		product.replenishmentMode !== replenishmentMode ||
 		product.quantityNeedsReview;
 	Object.assign(product, {
 		name: trimmedName,
 		quantity,
 		lowThreshold,
-		autoThreshold,
 		categoryId: categoryId || null,
 		locationId: locationId || null,
 		replenishmentMode,

@@ -5,6 +5,7 @@
 	import {
 		finalizeShopping as finalizePrototypeShopping,
 		getPrototypeState,
+		getShoppingSuggestions,
 		getLocationById,
 		removePendingShoppingItem,
 		undoShoppingPurchase
@@ -34,14 +35,7 @@
 	);
 	const feedback = createFeedback();
 
-	let suggestions = $derived(
-		prototypeState.inventory.filter(
-			(product) =>
-				product.active &&
-				product.status === 'LOW' &&
-				!shopping.some((item) => item.productId === product.id)
-		)
-	);
+	let suggestions = $derived(getShoppingSuggestions());
 
 	let pending = $derived(shopping.filter((item) => item.status === 'PENDING'));
 
@@ -238,7 +232,9 @@
 							class:low={item.status === 'LOW'}
 							class:out={item.status === 'OUT'}
 						>
-							{item.quantity} · Poco{item.quantityNeedsReview ? ' · Revisar cantidad' : ''}
+							{item.quantity} · {item.status === 'OUT' ? 'No hay' : 'Poco'}{item.quantityNeedsReview
+								? ' · Revisar cantidad'
+								: ''}
 						</span>
 					</div>
 

@@ -9,7 +9,6 @@
 		name: string;
 		quantity: number;
 		lowThreshold: number;
-		autoThreshold: number;
 		categoryId: string;
 		locationId: string;
 		replenishmentMode: ReplenishmentMode;
@@ -38,7 +37,6 @@
 	let saving = $state(false);
 	let quantity = $state(getInitialValue().quantity ?? 1);
 	let lowThreshold = $state(getInitialValue().lowThreshold ?? 1);
-	let autoThreshold = $state(getInitialValue().autoThreshold ?? 0);
 	let categoryId = $state(getInitialValue().categoryId ?? '');
 	let locationId = $state(getInitialValue().locationId ?? '');
 	let replenishmentMode = $state<ReplenishmentMode>(
@@ -46,12 +44,7 @@
 	);
 
 	let canSave = $derived(
-		name.trim().length > 0 &&
-			!saving &&
-			validQuantity(quantity) &&
-			validQuantity(lowThreshold) &&
-			(replenishmentMode === 'MANUAL' ||
-				(validQuantity(autoThreshold) && autoThreshold <= lowThreshold))
+		name.trim().length > 0 && !saving && validQuantity(quantity) && validQuantity(lowThreshold)
 	);
 
 	async function submit(addAnother = false) {
@@ -64,12 +57,6 @@
 				name: name.trim(),
 				quantity,
 				lowThreshold,
-				autoThreshold:
-					replenishmentMode === 'MANUAL'
-						? validQuantity(autoThreshold)
-							? Math.min(autoThreshold, lowThreshold)
-							: 0
-						: autoThreshold,
 				categoryId,
 				locationId,
 				replenishmentMode
@@ -86,7 +73,7 @@
 		name = '';
 		quantity = getInitialValue().quantity ?? 1;
 		lowThreshold = getInitialValue().lowThreshold ?? 1;
-		autoThreshold = getInitialValue().autoThreshold ?? 0;
+
 		replenishmentMode = getInitialValue().replenishmentMode ?? 'MANUAL';
 		await tick();
 		nameInput?.focus();
@@ -118,9 +105,10 @@
 				? statusLabel(quantity, lowThreshold)
 				: 'Revisa la cantidad'}
 		</p>
-		<QuantityInput label="Poco cuando queden como máximo" bind:value={lowThreshold} />
+		<QuantityInput label="Reponer cuando queden" bind:value={lowThreshold} />
 		<p class="quantity-status">
-			No hay siempre significa 0. Por encima del límite de Poco, el estado es Hay.
+			Con 0: No hay. De 1 hasta este límite: Poco. Por encima: Hay. Al llegar al límite se sugerirá
+			o se añadirá a Compra según la reposición elegida.
 		</p>
 	</div>
 
@@ -156,7 +144,7 @@
 
 			<span>
 				<strong>Manual</strong>
-				<small>Lo añadirás a Compra cuando lo necesites.</small>
+				<small>Aparecerá en Sugerencias al llegar al límite de reposición.</small>
 			</span>
 		</label>
 
@@ -165,21 +153,10 @@
 
 			<span>
 				<strong>Automática</strong>
-				<small>Se añadirá a Compra al llegar a la cantidad que indiques.</small>
+				<small>Se añadirá a Compra al llegar al límite de reposición.</small>
 			</span>
 		</label>
 	</fieldset>
-
-	{#if replenishmentMode === 'AUTOMATIC'}
-		<QuantityInput
-			label="Añadir a Compra cuando queden como máximo"
-			bind:value={autoThreshold}
-			max={lowThreshold}
-		/>
-		{#if autoThreshold > lowThreshold}<p class="quantity-status" role="alert">
-				El límite automático debe ser menor o igual al de Poco.
-			</p>{/if}
-	{/if}
 
 	<div class="form-actions">
 		<button class="save-button" type="submit" disabled={!canSave}>

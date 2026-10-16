@@ -24,9 +24,7 @@
 
 <article
 	class="product"
-	style={categoryColor
-		? `--category-tone: ${categoryColor.tone}; --category-soft: ${categoryColor.soft}`
-		: undefined}
+	style={categoryColor ? `--category-tone: ${categoryColor.tone}` : undefined}
 >
 	<button
 		class="product-button"
@@ -74,10 +72,10 @@
 
 <style>
 	.product {
-		border: 1px solid var(--line);
+		border: 1px solid color-mix(in srgb, var(--category-tone, var(--line)) 30%, var(--line));
 		border-left: 3px solid var(--category-tone, var(--line));
 		border-radius: 1rem;
-		background: var(--category-soft, var(--surface));
+		background: var(--surface);
 		box-shadow: var(--shadow);
 	}
 	.product-button {
@@ -96,8 +94,7 @@
 		cursor: pointer;
 	}
 	.product-button:hover {
-		background: var(--category-soft, var(--surface-soft));
-		filter: brightness(0.98);
+		background: var(--surface-soft);
 	}
 	.product-button:focus-visible {
 		outline: 2px solid var(--accent);

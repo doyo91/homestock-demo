@@ -35,6 +35,7 @@ export function loadPrototypeState(): PrototypeState {
 				active: product.active ?? true,
 				quantity,
 				lowThreshold,
+				packSize: validQuantity(product.packSize, 1) ? product.packSize : null,
 				quantityNeedsReview: known ? !!product.quantityNeedsReview : product.status !== 'OUT',
 				status: inventoryStatus(quantity, lowThreshold)
 			};

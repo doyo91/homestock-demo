@@ -18,12 +18,23 @@
 		onSaved: () => void;
 	} = $props();
 	function initialQuantity() {
-		return item?.quantity ?? 1;
+		return item && product?.packSize
+			? Math.max(1, Math.ceil(item.quantity / product.packSize))
+			: (item?.quantity ?? 1);
 	}
 	function initialStock() {
 		return initialExisting ?? product?.quantity ?? 0;
 	}
 	let quantity = $state(initialQuantity());
+	function initialPackSize() {
+		return product?.packSize ?? 1;
+	}
+	function initiallyUsesPacks() {
+		return !!item && !!product?.packSize;
+	}
+	let packSize = $state(initialPackSize());
+	let usePacks = $state(initiallyUsesPacks());
+	let bought = $derived(usePacks ? quantity * packSize : quantity);
 	let existing = $state(initialStock());
 	let discount = $state(false);
 	let error = $state('');
@@ -31,9 +42,11 @@
 	let current = $derived(
 		!purchase || product?.quantityNeedsReview ? existing : (product?.quantity ?? 0)
 	);
-	let total = $derived(current + quantity - (discount && current > 0 ? 1 : 0));
+	let total = $derived(current + bought - (discount && current > 0 ? 1 : 0));
 	let valid = $derived(
 		validQuantity(quantity, 1) &&
+			validQuantity(bought, 1) &&
+			(!usePacks || validQuantity(packSize, 1)) &&
 			(!product || (validQuantity(current) && (!purchase || validQuantity(total))))
 	);
 	function confirm() {
@@ -43,7 +56,8 @@
 					item.id,
 					quantity,
 					discount && current > 0,
-					product?.quantityNeedsReview ? existing : undefined
+					product?.quantityNeedsReview ? existing : undefined,
+					usePacks ? packSize : undefined
 				)
 			: product
 				? addProductToShopping(product.id, quantity, existing)
@@ -65,10 +79,40 @@
 		}}
 	>
 		<QuantityInput
-			label={purchase ? 'Cantidad comprada' : 'Cantidad a comprar'}
+			label={usePacks
+				? 'Número de packs'
+				: purchase
+					? 'Cantidad comprada'
+					: 'Cantidad a comprar (unidades)'}
 			bind:value={quantity}
 			min={1}
 		/>
+		{#if purchase && product?.packSize}
+			{#if usePacks}
+				<QuantityInput label="Unidades por pack" bind:value={packSize} min={1} />
+			{/if}
+			<p aria-live="polite">
+				Añadirás <strong>{valid ? bought : '—'} unidades</strong> al inventario.
+			</p>
+			<label class="discount"
+				><input
+					type="checkbox"
+					checked={!usePacks}
+					onchange={(event) => {
+						usePacks = !event.currentTarget.checked;
+						quantity = 1;
+					}}
+				/><span
+					>Introducir el total de unidades<small>Útil si compras packs de distintos tamaños.</small
+					></span
+				></label
+			>
+		{:else if product?.packSize}
+			<p>
+				Indica el total de unidades que necesitas. Al comprar podrás indicar cuántos packs llevas y
+				su tamaño.
+			</p>
+		{/if}
 		{#if product && (!purchase || product.quantityNeedsReview)}
 			{#if product.quantityNeedsReview}<p class="notice">
 					El recuento anterior no se conocía. Revisa cuánto queda en casa antes de continuar.
@@ -91,7 +135,7 @@
 			{/if}
 			<p class="total" aria-live="polite">
 				Total en casa: <strong>{valid ? total : '—'}</strong><small
-					>Tenías {current ?? '—'} · Compras {quantity ?? '—'}{discount && current > 0
+					>Tenías {current ?? '—'} · Compras {bought ?? '—'} unidades{discount && current > 0
 						? ' · Descuentas 1'
 						: ''}</small
 				>

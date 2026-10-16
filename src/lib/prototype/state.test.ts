@@ -693,3 +693,39 @@ describe('Eliminar productos', () => {
 		expect(deleteProduct('1')).toBe(false);
 	});
 });
+
+describe('Compra en packs', () => {
+	beforeEach(() => resetPrototype());
+	it('suma el contenido y permite deshacer aunque cambie el formato', () => {
+		const id = createProduct('Rollos', 2, null, null, 'MANUAL', 3, 6)!;
+		expect(addProductToShopping(id, 12)).toBe(true);
+		const item = getPrototypeState().shopping.find((item) => item.productId === id)!;
+		expect(purchaseShoppingItem(item.id, 2, false, undefined, 6)).toBe(true);
+		expect(getPrototypeState().inventory.find((p) => p.id === id)?.quantity).toBe(14);
+		expect(item.quantity).toBe(12);
+		expect(undoShoppingPurchase(item.id)).toBe(true);
+		expect(getPrototypeState().inventory.find((p) => p.id === id)?.quantity).toBe(2);
+		expect(purchaseShoppingItem(item.id, 1, false, undefined, 12)).toBe(true);
+		expect(getPrototypeState().inventory.find((p) => p.id === id)?.quantity).toBe(14);
+		expect(getPrototypeState().inventory.find((p) => p.id === id)?.packSize).toBe(6);
+	});
+	it('rechaza tamaños inválidos y totales excesivos sin modificar el stock', () => {
+		const id = createProduct('Rollos', 2, null, null, 'MANUAL', 3, 6)!;
+		addProductToShopping(id);
+		const item = getPrototypeState().shopping.find((item) => item.productId === id)!;
+		for (const size of [0, -1, 1.5, NaN, 1000000]) {
+			expect(purchaseShoppingItem(item.id, 2, false, undefined, size)).toBe(false);
+		}
+		expect(purchaseShoppingItem(item.id, 999999, false, undefined, 6)).toBe(false);
+		expect(item.status).toBe('PENDING');
+		expect(getPrototypeState().inventory.find((p) => p.id === id)?.quantity).toBe(2);
+	});
+	it('admite un total directo para formatos mezclados y valida la configuración', () => {
+		expect(createProduct('Inválido', 0, null, null, 'MANUAL', 1, 0)).toBeNull();
+		const id = createProduct('Rollos', 2, null, null, 'MANUAL', 3, 6)!;
+		addProductToShopping(id);
+		const item = getPrototypeState().shopping.find((item) => item.productId === id)!;
+		expect(purchaseShoppingItem(item.id, 15)).toBe(true);
+		expect(getPrototypeState().inventory.find((p) => p.id === id)?.quantity).toBe(17);
+	});
+});

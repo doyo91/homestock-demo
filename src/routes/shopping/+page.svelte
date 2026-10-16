@@ -170,6 +170,7 @@
 
 					<span class="item-name">
 						{item.name} · {item.quantity}
+						{item.quantity === 1 ? 'ud.' : 'uds.'}
 					</span>
 				</button>
 
@@ -232,9 +233,10 @@
 							class:low={item.status === 'LOW'}
 							class:out={item.status === 'OUT'}
 						>
-							{item.quantity} · {item.status === 'OUT' ? 'No hay' : 'Poco'}{item.quantityNeedsReview
-								? ' · Revisar cantidad'
-								: ''}
+							{item.quantity}
+							{item.quantity === 1 ? 'ud.' : 'uds.'} · {item.status === 'OUT'
+								? 'No hay'
+								: 'Poco'}{item.quantityNeedsReview ? ' · Revisar cantidad' : ''}
 						</span>
 					</div>
 
@@ -260,6 +262,7 @@
 
 						<span class="item-name">
 							{item.name} · {item.quantity}
+							{item.quantity === 1 ? 'ud.' : 'uds.'}
 						</span>
 					</div>
 

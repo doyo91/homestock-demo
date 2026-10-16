@@ -30,7 +30,7 @@
 		class="product-button"
 		type="button"
 		aria-haspopup="dialog"
-		aria-label={`Gestionar ${item.name}, ${item.quantity}, ${statusLabel}`}
+		aria-label={`Gestionar ${item.name}, ${item.quantity} ${item.quantity === 1 ? 'unidad' : 'unidades'}, ${statusLabel}`}
 		onclick={() => onOpen(item.id)}
 	>
 		<span class="product-info">
@@ -65,7 +65,8 @@
 			class:low={item.status === 'LOW'}
 			class:out={item.status === 'OUT'}
 		>
-			<span class="status-dot" aria-hidden="true"></span>{item.quantity} · {statusLabel}
+			<span class="status-dot" aria-hidden="true"></span>{item.quantity}
+			{item.quantity === 1 ? 'ud.' : 'uds.'} · {statusLabel}
 		</span>
 		<span class="chevron" aria-hidden="true">›</span>
 	</button>

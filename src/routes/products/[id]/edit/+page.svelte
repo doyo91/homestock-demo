@@ -12,7 +12,9 @@
 	const initialValue = product
 		? {
 				name: product.name,
-				status: product.status,
+				quantity: product.quantity,
+				lowThreshold: product.lowThreshold,
+				autoThreshold: product.autoThreshold,
 				categoryId: product.categoryId ?? '',
 				locationId: product.locationId ?? '',
 				replenishmentMode: product.replenishmentMode
@@ -23,7 +25,9 @@
 
 	function saveProduct(value: {
 		name: string;
-		status: 'AVAILABLE' | 'LOW' | 'OUT';
+		quantity: number;
+		lowThreshold: number;
+		autoThreshold: number;
 		categoryId: string;
 		locationId: string;
 		replenishmentMode: 'MANUAL' | 'AUTOMATIC';
@@ -35,10 +39,12 @@
 		const success = updateProduct(
 			product.id,
 			value.name,
-			value.status,
+			value.quantity,
 			value.categoryId || null,
 			value.locationId || null,
-			value.replenishmentMode
+			value.replenishmentMode,
+			value.lowThreshold,
+			value.autoThreshold
 		);
 
 		if (success) {
@@ -79,6 +85,9 @@
 	{/if}
 
 	{#if product && initialValue}
+		{#if product.quantityNeedsReview}<p class="feedback">
+				Revisa la cantidad provisional antes de guardar.
+			</p>{/if}
 		<ProductForm {initialValue} submitLabel="Guardar cambios" onsubmit={saveProduct} />
 	{:else}
 		<div class="not-found">

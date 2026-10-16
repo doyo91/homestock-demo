@@ -1,4 +1,6 @@
 <script lang="ts">
+	import QuantityInput from '$lib/components/QuantityInput.svelte';
+	import { validQuantity } from '$lib/prototype/quantities';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import {
@@ -25,6 +27,8 @@
 	}
 
 	let query = $state('');
+	let quantity = $state(1);
+	let existingQuantity = $state(0);
 	let selectedProductId = $state<string | null>(null);
 	let error = $state<string | null>(null);
 
@@ -66,6 +70,7 @@
 		}
 
 		selectedProductId = id;
+		existingQuantity = product.quantity;
 		query = product.name;
 		error = null;
 	}
@@ -73,6 +78,7 @@
 	function updateQuery(value: string) {
 		query = value;
 		selectedProductId = null;
+		existingQuantity = 0;
 		error = null;
 	}
 
@@ -81,7 +87,7 @@
 			return;
 		}
 
-		const added = addProductToShopping(selectedProduct.id);
+		const added = addProductToShopping(selectedProduct.id, quantity, existingQuantity);
 
 		if (!added) {
 			error = `${selectedProduct.name} ya está en Compra.`;
@@ -98,7 +104,7 @@
 			return;
 		}
 
-		const added = addOneOffShoppingItem(name);
+		const added = addOneOffShoppingItem(name, quantity);
 
 		if (!added) {
 			error = 'No se ha podido añadir el artículo.';
@@ -120,7 +126,7 @@
 			return;
 		}
 
-		const productId = saveShoppingItemAsProduct(name);
+		const productId = saveShoppingItemAsProduct(name, quantity, existingQuantity);
 
 		if (!productId) {
 			error = 'No se ha podido guardar el producto.';
@@ -160,6 +166,10 @@
 		/>
 	</div>
 
+	{#if normalizedQuery.length > 0}
+		<QuantityInput label="Cantidad a comprar" bind:value={quantity} min={1} />
+	{/if}
+
 	{#if error}
 		<div class="error" role="alert">
 			<span>{error}</span>
@@ -185,6 +195,12 @@
 				<span class="selected-mark" aria-hidden="true">✓</span>
 			</div>
 
+			{#if selectedProduct.quantityNeedsReview}<p class="hint">
+					Revisa el recuento: la cantidad anterior era provisional.
+				</p>{/if}
+			<QuantityInput label="Quedan en casa" bind:value={existingQuantity} />
+			<p class="hint">Se guardará esta cantidad. La compra se sumará al marcarla como comprada.</p>
+
 			{#if selectedProductAlreadyInShopping}
 				<p class="already-added">Este producto ya está en Compra.</p>
 			{/if}
@@ -192,7 +208,9 @@
 			<button
 				class="primary-button"
 				type="button"
-				disabled={selectedProductAlreadyInShopping}
+				disabled={selectedProductAlreadyInShopping ||
+					!validQuantity(quantity, 1) ||
+					!validQuantity(existingQuantity)}
 				onclick={addExistingProduct}
 			>
 				{selectedProductAlreadyInShopping ? 'Ya está en Compra' : 'Añadir a Compra'}
@@ -227,7 +245,12 @@
 				<span>“{query.trim()}”</span>
 			</div>
 
-			<button class="option" type="button" onclick={addOneOffItem}>
+			<button
+				class="option"
+				type="button"
+				disabled={!validQuantity(quantity, 1)}
+				onclick={addOneOffItem}
+			>
 				<div>
 					<strong>Solo esta compra</strong>
 					<span>No se guardará en tu inventario.</span>
@@ -236,10 +259,17 @@
 				<span class="chevron" aria-hidden="true">›</span>
 			</button>
 
+			<QuantityInput
+				label="Quedan en casa si lo guardas como producto"
+				bind:value={existingQuantity}
+			/>
+
 			<button
 				class="option"
 				type="button"
-				disabled={existingProductWithExactName !== null}
+				disabled={existingProductWithExactName !== null ||
+					!validQuantity(quantity, 1) ||
+					!validQuantity(existingQuantity)}
 				onclick={saveAsProduct}
 			>
 				<div>
@@ -250,7 +280,7 @@
 					<span>
 						{existingProductWithExactName
 							? 'Selecciona el producto existente para añadirlo.'
-							: 'Se añadirá al inventario como No hay.'}
+							: `Se guardará con ${existingQuantity ?? '—'} en casa; lo comprado se sumará al confirmar.`}
 					</span>
 				</div>
 

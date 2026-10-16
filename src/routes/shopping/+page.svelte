@@ -1,12 +1,11 @@
 <script lang="ts">
 	import { createFeedback } from '$lib/prototype/feedback.svelte';
+	import ShoppingQuantityPanel from '$lib/components/ShoppingQuantityPanel.svelte';
 	import { resolve } from '$app/paths';
 	import {
-		addProductToShopping,
 		finalizeShopping as finalizePrototypeShopping,
 		getPrototypeState,
 		getLocationById,
-		purchaseShoppingItem,
 		removePendingShoppingItem,
 		undoShoppingPurchase
 	} from '$lib/prototype/state.svelte';
@@ -21,17 +20,25 @@
 		return location?.name ?? 'Sin ubicación';
 	}
 
-	let showFinishConfirmation = $state(false);
-	const feedback = createFeedback();
-
 	let shopping = $derived(prototypeState.shopping);
+
+	let showFinishConfirmation = $state(false);
+	let purchaseId = $state<string | null>(null);
+	let suggestionId = $state<string | null>(null);
+	let purchaseItem = $derived(shopping.find((item) => item.id === purchaseId));
+	let purchaseProduct = $derived(
+		prototypeState.inventory.find((product) => product.id === purchaseItem?.productId)
+	);
+	let suggestionProduct = $derived(
+		prototypeState.inventory.find((product) => product.id === suggestionId)
+	);
+	const feedback = createFeedback();
 
 	let suggestions = $derived(
 		prototypeState.inventory.filter(
 			(product) =>
 				product.active &&
-				(product.status === 'LOW' ||
-					(product.status === 'OUT' && product.replenishmentMode === 'AUTOMATIC')) &&
+				product.status === 'LOW' &&
 				!shopping.some((item) => item.productId === product.id)
 		)
 	);
@@ -41,19 +48,7 @@
 	let purchased = $derived(shopping.filter((item) => item.status === 'PURCHASED'));
 
 	function markAsPurchased(id: string) {
-		const item = shopping.find((candidate) => candidate.id === id);
-
-		if (!item) {
-			return;
-		}
-
-		const purchasedSuccessfully = purchaseShoppingItem(id);
-
-		if (!purchasedSuccessfully) {
-			return;
-		}
-
-		feedback.clear();
+		purchaseId = id;
 	}
 
 	function undoPurchase(id: string) {
@@ -66,6 +61,10 @@
 		const undoneSuccessfully = undoShoppingPurchase(id);
 
 		if (!undoneSuccessfully) {
+			feedback.show(
+				'No se puede deshacer: las existencias han cambiado y quedarían negativas. Ajusta la cantidad del inventario antes de intentarlo.',
+				true
+			);
 			return;
 		}
 
@@ -73,20 +72,7 @@
 	}
 
 	function addSuggestion(productId: string) {
-		const product = prototypeState.inventory.find((item) => item.id === productId);
-
-		if (!product) {
-			return;
-		}
-
-		const added = addProductToShopping(productId);
-
-		if (!added) {
-			feedback.show(`${product.name} ya está en Compra.`);
-			return;
-		}
-
-		feedback.show(`${product.name} añadido a Compra.`);
+		suggestionId = productId;
 	}
 
 	function removePendingItem(id: string) {
@@ -189,7 +175,7 @@
 					<span class="check" aria-hidden="true"></span>
 
 					<span class="item-name">
-						{item.name}
+						{item.name} · {item.quantity}
 					</span>
 				</button>
 
@@ -252,7 +238,7 @@
 							class:low={item.status === 'LOW'}
 							class:out={item.status === 'OUT'}
 						>
-							{item.status === 'LOW' ? 'Poco' : 'No hay'}
+							{item.quantity} · Poco{item.quantityNeedsReview ? ' · Revisar cantidad' : ''}
 						</span>
 					</div>
 
@@ -277,7 +263,7 @@
 						<span class="check checked" aria-hidden="true"> ✓ </span>
 
 						<span class="item-name">
-							{item.name}
+							{item.name} · {item.quantity}
 						</span>
 					</div>
 
@@ -320,6 +306,28 @@
 		</div>
 	{/if}
 </section>
+
+{#if purchaseItem}
+	<ShoppingQuantityPanel
+		item={purchaseItem}
+		product={purchaseProduct}
+		onClose={() => (purchaseId = null)}
+		onSaved={() => {
+			purchaseId = null;
+			feedback.show('Compra registrada.');
+		}}
+	/>
+{/if}
+{#if suggestionProduct}
+	<ShoppingQuantityPanel
+		product={suggestionProduct}
+		onClose={() => (suggestionId = null)}
+		onSaved={() => {
+			suggestionId = null;
+			feedback.show('Producto añadido a Compra.');
+		}}
+	/>
+{/if}
 
 <style>
 	.page-header {

@@ -22,7 +22,9 @@
 	function saveProduct(
 		value: {
 			name: string;
-			status: 'AVAILABLE' | 'LOW' | 'OUT';
+			quantity: number;
+			lowThreshold: number;
+			autoThreshold: number;
 			categoryId: string;
 			locationId: string;
 			replenishmentMode: 'MANUAL' | 'AUTOMATIC';
@@ -31,10 +33,12 @@
 	): boolean {
 		const productId = createProduct(
 			value.name,
-			value.status,
+			value.quantity,
 			value.categoryId || null,
 			value.locationId || null,
-			value.replenishmentMode
+			value.replenishmentMode,
+			value.lowThreshold,
+			value.autoThreshold
 		);
 
 		if (productId) {

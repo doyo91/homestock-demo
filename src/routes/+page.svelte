@@ -3,12 +3,9 @@
 	import { resolve } from '$app/paths';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { getPrototypeState, getLocationById } from '$lib/prototype/state.svelte';
-	import {
-		changeInventoryStatus,
-		addProductToShopping,
-		deleteProduct
-	} from '$lib/prototype/state.svelte';
+	import { changeInventoryQuantity, deleteProduct } from '$lib/prototype/state.svelte';
 	import type { InventoryStatus } from '$lib/prototype/types';
+	import ShoppingQuantityPanel from '$lib/components/ShoppingQuantityPanel.svelte';
 	import InventoryProduct from '$lib/components/inventory/InventoryProduct.svelte';
 	import InventoryProductPanel from '$lib/components/inventory/InventoryProductPanel.svelte';
 	import { getCategoryColor } from '$lib/prototype/seed';
@@ -40,6 +37,14 @@
 
 	let filtersOpen = $state(false);
 	let selectedProductId = $state<string | null>(null);
+	let shoppingProductId = $state<string | null>(null);
+	let shoppingExisting = $state(0);
+	let shoppingProduct = $derived(
+		prototypeState.inventory.find((product) => product.id === shoppingProductId)
+	);
+	let needsReview = $derived(
+		prototypeState.inventory.filter((product) => product.active && product.quantityNeedsReview)
+	);
 
 	const statusFilters: {
 		value: InventoryStatus | 'ALL';
@@ -86,16 +91,15 @@
 		statusFilter !== 'ALL' || categoryFilter !== 'ALL' || locationFilter !== 'ALL'
 	);
 
-	function handleStatusChange(id: string, status: InventoryStatus) {
-		const updated = changeInventoryStatus(id, status);
-		if (!updated) feedback.show('No se ha podido actualizar el estado.', true);
+	function handleQuantityChange(id: string, quantity: number) {
+		const updated = changeInventoryQuantity(id, quantity);
+		if (!updated) feedback.show('No se ha podido actualizar la cantidad.', true);
 		selectedProductId = null;
 	}
 
-	function handleAddToShopping(id: string) {
-		feedback.show(
-			addProductToShopping(id) ? 'Producto añadido a Compra.' : 'El producto ya está en Compra.'
-		);
+	function handleAddToShopping(id: string, existing: number) {
+		shoppingProductId = id;
+		shoppingExisting = existing;
 		selectedProductId = null;
 	}
 
@@ -140,6 +144,21 @@
 
 	{#if feedback.message}
 		<p class="feedback" role="status">{feedback.message}</p>
+	{/if}
+
+	{#if needsReview.length > 0}
+		<aside class="quantity-review">
+			<strong>Revisa las cantidades de tus productos</strong>
+			<p>
+				La versión anterior guardaba estados. Hemos puesto 1 como cantidad provisional donde no se
+				conocía el recuento. Confirma cuánto queda para activar su reposición.
+			</p>
+			{#each needsReview as product (product.id)}
+				<button type="button" onclick={() => (selectedProductId = product.id)}
+					>Revisar {product.name}</button
+				>
+			{/each}
+		</aside>
 	{/if}
 
 	<div class="category-filters" role="group" aria-label="Filtrar por categoría">
@@ -278,14 +297,49 @@
 		alreadyInShopping={prototypeState.shopping.some(
 			(item) => item.productId === selectedProduct.id
 		)}
-		onStatusChange={handleStatusChange}
+		onQuantityChange={handleQuantityChange}
 		onAddToShopping={handleAddToShopping}
 		onDelete={handleDelete}
 		onClose={() => (selectedProductId = null)}
 	/>
 {/if}
 
+{#if shoppingProduct}
+	<ShoppingQuantityPanel
+		product={shoppingProduct}
+		initialExisting={shoppingExisting}
+		onClose={() => (shoppingProductId = null)}
+		onSaved={() => {
+			shoppingProductId = null;
+			feedback.show('Producto añadido a Compra.');
+		}}
+	/>
+{/if}
+
 <style>
+	.quantity-review {
+		margin-bottom: 1rem;
+		padding: 1rem;
+		border: 1px solid var(--line);
+		border-radius: 1rem;
+		background: var(--warning-soft);
+		color: var(--warning);
+	}
+	.quantity-review p {
+		font-size: 0.85rem;
+		line-height: 1.5;
+	}
+	.quantity-review button {
+		min-height: 2.75rem;
+		margin: 0.25rem;
+		padding: 0.5rem 0.75rem;
+		border: 1px solid currentColor;
+		border-radius: 0.75rem;
+		background: var(--surface);
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
 	.previously-hidden {
 		margin-top: 1.5rem;
 		padding: 1rem;

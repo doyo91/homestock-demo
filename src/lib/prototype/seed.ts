@@ -46,6 +46,10 @@ export interface PrototypeInventoryItem {
 	categoryId: string | null;
 	locationId: string | null;
 	status: InventoryStatus;
+	quantity: number;
+	lowThreshold: number;
+	autoThreshold: number;
+	quantityNeedsReview: boolean;
 	replenishmentMode: ReplenishmentMode;
 }
 
@@ -55,7 +59,8 @@ export interface PrototypeShoppingItem {
 	status: ShoppingItemStatus;
 	source: ShoppingItemSource;
 	productId: string | null;
-	previousInventoryStatus: InventoryStatus | null;
+	quantity: number;
+	purchaseDelta: number | null;
 }
 
 export interface PrototypeState {
@@ -98,6 +103,10 @@ export function createPrototypeSeed(): PrototypeState {
 				categoryId: categoryIdAlimentacion,
 				locationId: locationIdNevera,
 				status: 'LOW',
+				quantity: 1,
+				lowThreshold: 1,
+				autoThreshold: 0,
+				quantityNeedsReview: false,
 				active: true,
 				replenishmentMode: 'AUTOMATIC'
 			},
@@ -107,6 +116,10 @@ export function createPrototypeSeed(): PrototypeState {
 				categoryId: categoryIdAlimentacion,
 				locationId: locationIdNevera,
 				status: 'AVAILABLE',
+				quantity: 3,
+				lowThreshold: 1,
+				autoThreshold: 0,
+				quantityNeedsReview: false,
 				active: true,
 				replenishmentMode: 'MANUAL'
 			},
@@ -116,6 +129,10 @@ export function createPrototypeSeed(): PrototypeState {
 				categoryId: categoryIdHigiene,
 				locationId: locationIdDespensa,
 				status: 'OUT',
+				quantity: 0,
+				lowThreshold: 1,
+				autoThreshold: 0,
+				quantityNeedsReview: false,
 				active: true,
 				replenishmentMode: 'AUTOMATIC'
 			},
@@ -125,6 +142,10 @@ export function createPrototypeSeed(): PrototypeState {
 				categoryId: categoryIdLimpieza,
 				locationId: locationIdLavadero,
 				status: 'AVAILABLE',
+				quantity: 3,
+				lowThreshold: 1,
+				autoThreshold: 0,
+				quantityNeedsReview: false,
 				active: true,
 				replenishmentMode: 'MANUAL'
 			}
@@ -136,7 +157,8 @@ export function createPrototypeSeed(): PrototypeState {
 				status: 'PENDING',
 				source: 'AUTO',
 				productId: '3',
-				previousInventoryStatus: null
+				quantity: 1,
+				purchaseDelta: null
 			},
 			{
 				id: '2',
@@ -144,7 +166,8 @@ export function createPrototypeSeed(): PrototypeState {
 				status: 'PENDING',
 				source: 'MANUAL',
 				productId: null,
-				previousInventoryStatus: null
+				quantity: 1,
+				purchaseDelta: null
 			}
 		],
 		defaultScreen: 'INVENTORY',

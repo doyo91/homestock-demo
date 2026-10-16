@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { getActiveCategories, getActiveLocations } from '$lib/prototype/state.svelte';
-	import type { InventoryStatus, ReplenishmentMode } from '$lib/prototype/types';
+	import QuantityInput from './QuantityInput.svelte';
+	import { validQuantity, statusLabel } from '$lib/prototype/quantities';
+	import type { ReplenishmentMode } from '$lib/prototype/types';
 
 	interface ProductFormValue {
 		name: string;
-		status: InventoryStatus;
+		quantity: number;
+		lowThreshold: number;
+		autoThreshold: number;
 		categoryId: string;
 		locationId: string;
 		replenishmentMode: ReplenishmentMode;
@@ -32,20 +36,23 @@
 	let name = $state(getInitialValue().name ?? '');
 	let nameInput = $state<HTMLInputElement>();
 	let saving = $state(false);
-	let status = $state<InventoryStatus>(getInitialValue().status ?? 'AVAILABLE');
+	let quantity = $state(getInitialValue().quantity ?? 1);
+	let lowThreshold = $state(getInitialValue().lowThreshold ?? 1);
+	let autoThreshold = $state(getInitialValue().autoThreshold ?? 0);
 	let categoryId = $state(getInitialValue().categoryId ?? '');
 	let locationId = $state(getInitialValue().locationId ?? '');
 	let replenishmentMode = $state<ReplenishmentMode>(
 		getInitialValue().replenishmentMode ?? 'MANUAL'
 	);
 
-	const statuses: { value: InventoryStatus; label: string }[] = [
-		{ value: 'AVAILABLE', label: 'Hay' },
-		{ value: 'LOW', label: 'Poco' },
-		{ value: 'OUT', label: 'No hay' }
-	];
-
-	let canSave = $derived(name.trim().length > 0 && !saving);
+	let canSave = $derived(
+		name.trim().length > 0 &&
+			!saving &&
+			validQuantity(quantity) &&
+			validQuantity(lowThreshold) &&
+			(replenishmentMode === 'MANUAL' ||
+				(validQuantity(autoThreshold) && autoThreshold <= lowThreshold))
+	);
 
 	async function submit(addAnother = false) {
 		if (!canSave) {
@@ -55,7 +62,14 @@
 		const saved = onsubmit(
 			{
 				name: name.trim(),
-				status,
+				quantity,
+				lowThreshold,
+				autoThreshold:
+					replenishmentMode === 'MANUAL'
+						? validQuantity(autoThreshold)
+							? Math.min(autoThreshold, lowThreshold)
+							: 0
+						: autoThreshold,
 				categoryId,
 				locationId,
 				replenishmentMode
@@ -70,7 +84,9 @@
 		}
 
 		name = '';
-		status = getInitialValue().status ?? 'AVAILABLE';
+		quantity = getInitialValue().quantity ?? 1;
+		lowThreshold = getInitialValue().lowThreshold ?? 1;
+		autoThreshold = getInitialValue().autoThreshold ?? 0;
 		replenishmentMode = getInitialValue().replenishmentMode ?? 'MANUAL';
 		await tick();
 		nameInput?.focus();
@@ -95,22 +111,18 @@
 		/>
 	</label>
 
-	<fieldset class="field">
-		<legend>Estado</legend>
-
-		<div class="status-selector">
-			{#each statuses as item (item.value)}
-				<button
-					type="button"
-					class:active={status === item.value}
-					aria-pressed={status === item.value}
-					onclick={() => (status = item.value)}
-				>
-					{item.label}
-				</button>
-			{/each}
-		</div>
-	</fieldset>
+	<div>
+		<QuantityInput label="Cantidad en casa" bind:value={quantity} />
+		<p class="quantity-status" aria-live="polite">
+			Estado: {validQuantity(quantity) && validQuantity(lowThreshold)
+				? statusLabel(quantity, lowThreshold)
+				: 'Revisa la cantidad'}
+		</p>
+		<QuantityInput label="Poco cuando queden como máximo" bind:value={lowThreshold} />
+		<p class="quantity-status">
+			No hay siempre significa 0. Por encima del límite de Poco, el estado es Hay.
+		</p>
+	</div>
 
 	<label class="field">
 		<span>Categoría</span>
@@ -153,10 +165,21 @@
 
 			<span>
 				<strong>Automática</strong>
-				<small>Se añadirá a Compra cuando pase a No hay.</small>
+				<small>Se añadirá a Compra al llegar a la cantidad que indiques.</small>
 			</span>
 		</label>
 	</fieldset>
+
+	{#if replenishmentMode === 'AUTOMATIC'}
+		<QuantityInput
+			label="Añadir a Compra cuando queden como máximo"
+			bind:value={autoThreshold}
+			max={lowThreshold}
+		/>
+		{#if autoThreshold > lowThreshold}<p class="quantity-status" role="alert">
+				El límite automático debe ser menor o igual al de Poco.
+			</p>{/if}
+	{/if}
 
 	<div class="form-actions">
 		<button class="save-button" type="submit" disabled={!canSave}>
@@ -171,6 +194,12 @@
 </form>
 
 <style>
+	.quantity-status {
+		margin: 0.4rem 0;
+		color: var(--muted);
+		font-size: 0.8rem;
+		line-height: 1.5;
+	}
 	.form-actions {
 		display: grid;
 		gap: 0.75rem;
@@ -223,31 +252,6 @@
 		border-radius: 0.5rem;
 		background: var(--surface);
 		font: inherit;
-	}
-
-	.status-selector {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 0.25rem;
-		padding: 0.25rem;
-		border-radius: 0.625rem;
-		background: var(--surface-soft);
-	}
-
-	.status-selector button {
-		min-height: 2.5rem;
-		border: 0;
-		border-radius: 0.45rem;
-		background: transparent;
-		color: var(--muted);
-		cursor: pointer;
-	}
-
-	.status-selector button.active {
-		background: var(--surface);
-		color: var(--ink);
-		font-weight: 600;
-		box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
 	}
 
 	.radio-option {
@@ -307,25 +311,6 @@
 		border-radius: 0.8rem;
 		min-height: 3rem;
 		background: var(--surface-soft);
-	}
-	.status-selector {
-		border-radius: 0.9rem;
-	}
-	.status-selector button {
-		border-radius: 0.65rem;
-		min-height: 2.75rem;
-	}
-	.status-selector button.active {
-		background: var(--success-soft);
-		color: var(--success);
-	}
-	.status-selector button:nth-child(2).active {
-		background: var(--warning-soft);
-		color: var(--warning);
-	}
-	.status-selector button:nth-child(3).active {
-		background: var(--danger-soft);
-		color: var(--danger);
 	}
 	.radio-option {
 		padding: 0.85rem;

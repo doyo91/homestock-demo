@@ -48,6 +48,7 @@ export interface PrototypeInventoryItem {
 	status: InventoryStatus;
 	quantity: number;
 	lowThreshold: number;
+	packSize?: number | null;
 	quantityNeedsReview: boolean;
 	replenishmentMode: ReplenishmentMode;
 }

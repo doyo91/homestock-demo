@@ -9,6 +9,7 @@
 		name: string;
 		quantity: number;
 		lowThreshold: number;
+		packSize: number | null;
 		categoryId: string;
 		locationId: string;
 		replenishmentMode: ReplenishmentMode;
@@ -37,6 +38,8 @@
 	let saving = $state(false);
 	let quantity = $state(getInitialValue().quantity ?? 1);
 	let lowThreshold = $state(getInitialValue().lowThreshold ?? 1);
+	let usesPacks = $state(!!getInitialValue().packSize);
+	let packSize = $state(getInitialValue().packSize ?? 6);
 	let categoryId = $state(getInitialValue().categoryId ?? '');
 	let locationId = $state(getInitialValue().locationId ?? '');
 	let replenishmentMode = $state<ReplenishmentMode>(
@@ -44,7 +47,11 @@
 	);
 
 	let canSave = $derived(
-		name.trim().length > 0 && !saving && validQuantity(quantity) && validQuantity(lowThreshold)
+		name.trim().length > 0 &&
+			!saving &&
+			validQuantity(quantity) &&
+			validQuantity(lowThreshold) &&
+			(!usesPacks || validQuantity(packSize, 1))
 	);
 
 	async function submit(addAnother = false) {
@@ -57,6 +64,7 @@
 				name: name.trim(),
 				quantity,
 				lowThreshold,
+				packSize: usesPacks ? packSize : null,
 				categoryId,
 				locationId,
 				replenishmentMode
@@ -71,6 +79,8 @@
 		}
 
 		name = '';
+		usesPacks = !!getInitialValue().packSize;
+		packSize = getInitialValue().packSize ?? 6;
 		quantity = getInitialValue().quantity ?? 1;
 		lowThreshold = getInitialValue().lowThreshold ?? 1;
 
@@ -110,6 +120,24 @@
 			Con 0: No hay. De 1 hasta este límite: Poco. Por encima: Hay. Al llegar al límite se sugerirá
 			o se añadirá a Compra según la reposición elegida.
 		</p>
+	</div>
+
+	<div>
+		<label class="radio-option">
+			<input type="checkbox" bind:checked={usesPacks} />
+			<span
+				><strong>Se compra en packs</strong><small
+					>Cuenta el contenido en casa: por ejemplo, rollos de papel, no paquetes.</small
+				></span
+			>
+		</label>
+		{#if usesPacks}
+			<QuantityInput label="Unidades por pack habitual" bind:value={packSize} min={1} />
+			<p class="quantity-status">
+				Podrás cambiar el tamaño del pack en cada compra. La cantidad en casa y el límite de
+				reposición siempre cuentan unidades.
+			</p>
+		{/if}
 	</div>
 
 	<label class="field">

@@ -14,6 +14,7 @@
 				name: product.name,
 				quantity: product.quantity,
 				lowThreshold: product.lowThreshold,
+				packSize: product.packSize ?? null,
 				categoryId: product.categoryId ?? '',
 				locationId: product.locationId ?? '',
 				replenishmentMode: product.replenishmentMode
@@ -26,6 +27,7 @@
 		name: string;
 		quantity: number;
 		lowThreshold: number;
+		packSize: number | null;
 		categoryId: string;
 		locationId: string;
 		replenishmentMode: 'MANUAL' | 'AUTOMATIC';
@@ -41,7 +43,8 @@
 			value.categoryId || null,
 			value.locationId || null,
 			value.replenishmentMode,
-			value.lowThreshold
+			value.lowThreshold,
+			value.packSize
 		);
 
 		if (success) {

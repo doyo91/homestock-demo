@@ -172,11 +172,15 @@ export function purchaseShoppingItem(
 	id: string,
 	quantity?: number,
 	discountExisting = false,
-	existingQuantity?: number
+	existingQuantity?: number,
+	packSize?: number
 ): boolean {
 	const item = state.shopping.find((candidate) => candidate.id === id);
 	if (!item || item.status !== 'PENDING') return false;
-	const bought = quantity ?? item.quantity;
+	if (packSize !== undefined && !validQuantity(packSize, 1)) return false;
+	const bought = (quantity ?? item.quantity) * (packSize ?? 1);
+	if (packSize !== undefined && (!item.productId || !getProductById(item.productId)?.packSize))
+		return false;
 	if (!validQuantity(bought, 1)) return false;
 	let delta = bought;
 	if (item.productId !== null) {
@@ -250,13 +254,15 @@ export function createProduct(
 	categoryId: string | null,
 	locationId: string | null,
 	replenishmentMode: 'MANUAL' | 'AUTOMATIC',
-	lowThreshold = 1
+	lowThreshold = 1,
+	packSize: number | null = null
 ): string | null {
 	const trimmedName = name.trim();
 	if (
 		!trimmedName ||
 		!validQuantity(quantity) ||
 		!validQuantity(lowThreshold) ||
+		(packSize !== null && !validQuantity(packSize, 1)) ||
 		state.inventory.some(
 			(item) => item.name.trim().toLocaleLowerCase() === trimmedName.toLocaleLowerCase()
 		)
@@ -269,6 +275,7 @@ export function createProduct(
 		locationId: locationId || null,
 		quantity,
 		lowThreshold,
+		packSize,
 		quantityNeedsReview: false,
 		status: inventoryStatus(quantity, lowThreshold),
 		active: true,
@@ -287,7 +294,8 @@ export function updateProduct(
 	categoryId: string | null,
 	locationId: string | null,
 	replenishmentMode: 'MANUAL' | 'AUTOMATIC',
-	lowThreshold = 1
+	lowThreshold = 1,
+	packSize: number | null = null
 ): boolean {
 	const product = getProductById(productId);
 	const trimmedName = name.trim();
@@ -296,6 +304,7 @@ export function updateProduct(
 		!trimmedName ||
 		!validQuantity(quantity) ||
 		!validQuantity(lowThreshold) ||
+		(packSize !== null && !validQuantity(packSize, 1)) ||
 		state.inventory.some(
 			(item) =>
 				item.id !== productId &&
@@ -312,6 +321,7 @@ export function updateProduct(
 		name: trimmedName,
 		quantity,
 		lowThreshold,
+		packSize,
 		categoryId: categoryId || null,
 		locationId: locationId || null,
 		replenishmentMode,

@@ -48,7 +48,6 @@ export interface PrototypeInventoryItem {
 	status: InventoryStatus;
 	quantity: number;
 	lowThreshold: number;
-	autoThreshold: number;
 	quantityNeedsReview: boolean;
 	replenishmentMode: ReplenishmentMode;
 }
@@ -105,7 +104,6 @@ export function createPrototypeSeed(): PrototypeState {
 				status: 'LOW',
 				quantity: 1,
 				lowThreshold: 1,
-				autoThreshold: 0,
 				quantityNeedsReview: false,
 				active: true,
 				replenishmentMode: 'AUTOMATIC'
@@ -118,7 +116,6 @@ export function createPrototypeSeed(): PrototypeState {
 				status: 'AVAILABLE',
 				quantity: 3,
 				lowThreshold: 1,
-				autoThreshold: 0,
 				quantityNeedsReview: false,
 				active: true,
 				replenishmentMode: 'MANUAL'
@@ -131,7 +128,6 @@ export function createPrototypeSeed(): PrototypeState {
 				status: 'OUT',
 				quantity: 0,
 				lowThreshold: 1,
-				autoThreshold: 0,
 				quantityNeedsReview: false,
 				active: true,
 				replenishmentMode: 'AUTOMATIC'
@@ -144,13 +140,21 @@ export function createPrototypeSeed(): PrototypeState {
 				status: 'AVAILABLE',
 				quantity: 3,
 				lowThreshold: 1,
-				autoThreshold: 0,
 				quantityNeedsReview: false,
 				active: true,
 				replenishmentMode: 'MANUAL'
 			}
 		],
 		shopping: [
+			{
+				id: '3',
+				name: 'Leche',
+				status: 'PENDING',
+				source: 'AUTO',
+				productId: '1',
+				quantity: 1,
+				purchaseDelta: null
+			},
 			{
 				id: '1',
 				name: 'Papel higiénico',

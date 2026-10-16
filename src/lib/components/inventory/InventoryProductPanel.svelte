@@ -76,7 +76,7 @@
 		<div>
 			<h2 id="product-panel-title">{deleting ? `¿Eliminar ${item.name}?` : item.name}</h2>
 			{#if !deleting && item.replenishmentMode === 'AUTOMATIC'}
-				<p>Reposición automática cuando queden {item.autoThreshold} o menos</p>
+				<p>Reposición automática cuando queden {item.lowThreshold} o menos</p>
 			{/if}
 		</div>
 		<button class="close" type="button" aria-label="Cerrar panel" onclick={onClose}>×</button>

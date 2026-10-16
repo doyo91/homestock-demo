@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
 	changeInventoryQuantity,
+	removePendingShoppingItem,
+	getShoppingSuggestions,
 	deleteProduct,
 	addProductToShopping,
 	addOneOffShoppingItem,
@@ -26,7 +28,11 @@ import {
 } from './state.svelte';
 
 describe('Cantidades, reposición y compra', () => {
-	beforeEach(() => resetPrototype());
+	beforeEach(() => {
+		resetPrototype();
+		const seeded = getPrototypeState().shopping.find((item) => item.productId === '1');
+		if (seeded) removePendingShoppingItem(seeded.id);
+	});
 	const product = () => getPrototypeState().inventory.find((item) => item.id === '1')!;
 	const linked = () => getPrototypeState().shopping.filter((item) => item.productId === '1');
 
@@ -41,8 +47,8 @@ describe('Cantidades, reposición y compra', () => {
 		expect(product().quantity).toBe(quantity);
 	});
 
-	it('admite umbrales iguales y repone al alcanzar el límite sin duplicar', () => {
-		expect(updateProduct('1', 'Leche', 3, null, null, 'AUTOMATIC', 2, 2)).toBe(true);
+	it('el mismo umbral cambia a Poco y repone sin duplicar', () => {
+		expect(updateProduct('1', 'Leche', 3, null, null, 'AUTOMATIC', 2)).toBe(true);
 		expect(linked()).toHaveLength(0);
 		changeInventoryQuantity('1', 2);
 		expect(product().status).toBe('LOW');
@@ -52,11 +58,11 @@ describe('Cantidades, reposición y compra', () => {
 		expect(linked()).toHaveLength(1);
 	});
 
-	it('separa Poco y reposición, y solo retira pendientes automáticos al reponer fuera de la app', () => {
-		updateProduct('1', 'Leche', 3, null, null, 'AUTOMATIC', 2, 1);
-		changeInventoryQuantity('1', 2);
+	it('retira solo pendientes automáticos al superar el umbral', () => {
+		updateProduct('1', 'Leche', 3, null, null, 'AUTOMATIC', 2);
+		changeInventoryQuantity('1', 3);
 		expect(linked()).toHaveLength(0);
-		changeInventoryQuantity('1', 1);
+		changeInventoryQuantity('1', 2);
 		expect(linked()).toHaveLength(1);
 		changeInventoryQuantity('1', 4);
 		expect(linked()).toHaveLength(0);
@@ -67,10 +73,38 @@ describe('Cantidades, reposición y compra', () => {
 	});
 
 	it('crear o configurar un automático ya bajo mínimos genera su pendiente', () => {
-		const id = createProduct('Arroz', 1, null, null, 'AUTOMATIC', 2, 1)!;
+		const id = createProduct('Arroz', 1, null, null, 'AUTOMATIC', 2)!;
 		expect(getPrototypeState().shopping.find((item) => item.productId === id)?.source).toBe('AUTO');
-		expect(updateProduct('1', 'Leche', 1, null, null, 'AUTOMATIC', 1, 1)).toBe(true);
+		updateProduct('1', 'Leche', 1, null, null, 'MANUAL', 1);
+		expect(updateProduct('1', 'Leche', 1, null, null, 'AUTOMATIC', 1)).toBe(true);
 		expect(linked()).toHaveLength(1);
+	});
+
+	it('los manuales se sugieren al llegar al umbral y siguen sugeridos en cero', () => {
+		updateProduct('2', 'Huevos', 3, null, null, 'MANUAL', 2);
+		expect(getShoppingSuggestions().some((product) => product.id === '2')).toBe(false);
+		changeInventoryQuantity('2', 2);
+		expect(getShoppingSuggestions().some((product) => product.id === '2')).toBe(true);
+		changeInventoryQuantity('2', 0);
+		expect(getShoppingSuggestions().some((product) => product.id === '2')).toBe(true);
+		addProductToShopping('2');
+		expect(getShoppingSuggestions().some((product) => product.id === '2')).toBe(false);
+	});
+
+	it('con límite cero nunca hay Poco, pero en cero se repone o se sugiere', () => {
+		updateProduct('1', 'Leche', 1, null, null, 'AUTOMATIC', 0);
+		expect(product().status).toBe('AVAILABLE');
+		changeInventoryQuantity('1', 0);
+		expect(product().status).toBe('OUT');
+		expect(linked()).toHaveLength(1);
+		updateProduct('2', 'Huevos', 0, null, null, 'MANUAL', 0);
+		expect(getShoppingSuggestions().some((product) => product.id === '2')).toBe(true);
+	});
+
+	it('el ejemplo inicial ya coloca los automáticos en Compra al llegar al límite', () => {
+		resetPrototype();
+		expect(linked()).toHaveLength(1);
+		expect(getShoppingSuggestions().some((candidate) => candidate.id === '1')).toBe(false);
 	});
 
 	it('no añade productos manuales al llegar a cero', () => {
@@ -111,7 +145,7 @@ describe('Cantidades, reposición y compra', () => {
 	});
 
 	it('no repone otra vez al comprar bajo mínimos ni al finalizar', () => {
-		updateProduct('1', 'Leche', 0, null, null, 'AUTOMATIC', 3, 2);
+		updateProduct('1', 'Leche', 0, null, null, 'AUTOMATIC', 3);
 		const item = linked()[0];
 		purchaseShoppingItem(item.id, 1);
 		expect(product().status).toBe('LOW');
@@ -196,10 +230,10 @@ describe('Cantidades, reposición y compra', () => {
 		expect(linked()[0].name).toBe('Leche nueva');
 	});
 
-	it('rechaza umbrales invertidos y cantidades no enteras o negativas sin cambios', () => {
+	it('rechaza umbrales inválidos y cantidades no enteras o negativas sin cambios', () => {
 		const before = JSON.stringify(getPrototypeState());
-		expect(createProduct('Inválido', 1, null, null, 'AUTOMATIC', 1, 2)).toBeNull();
-		expect(updateProduct('1', 'Leche', 1, null, null, 'AUTOMATIC', 1, 2)).toBe(false);
+		expect(createProduct('Inválido', 1, null, null, 'AUTOMATIC', -1)).toBeNull();
+		expect(updateProduct('1', 'Leche', 1, null, null, 'AUTOMATIC', 1.5)).toBe(false);
 		for (const quantity of [-1, 1.5, NaN, Infinity, 1000000]) {
 			expect(changeInventoryQuantity('1', quantity)).toBe(false);
 			expect(addProductToShopping('1', quantity)).toBe(false);

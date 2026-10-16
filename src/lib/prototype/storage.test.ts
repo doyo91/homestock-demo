@@ -4,7 +4,6 @@ import {
 	deleteProduct,
 	resetPrototype,
 	getPrototypeState,
-	addProductToShopping,
 	purchaseShoppingItem,
 	undoShoppingPurchase
 } from './state.svelte';
@@ -106,16 +105,15 @@ describe('Persistencia y migración de cantidades', () => {
 			status: 'OUT',
 			quantityNeedsReview: false
 		});
-		expect(restored.shopping).toHaveLength(2);
+		expect(restored.shopping).toHaveLength(3);
 		expect(restored.shopping[0]).toMatchObject({ quantity: 1, purchaseDelta: null });
 	});
 
-	it('conserva la cantidad, los límites iguales y la revisión confirmada al recargar', () => {
+	it('conserva la cantidad, el umbral único y la revisión confirmada al recargar', () => {
 		const state = createPrototypeSeed();
 		Object.assign(state.inventory[0], {
 			quantity: 5,
 			lowThreshold: 2,
-			autoThreshold: 2,
 			quantityNeedsReview: false,
 			status: 'OUT'
 		});
@@ -124,10 +122,42 @@ describe('Persistencia y migración de cantidades', () => {
 		expect(loadPrototypeState().inventory[0]).toMatchObject({
 			quantity: 5,
 			lowThreshold: 2,
-			autoThreshold: 2,
 			quantityNeedsReview: false,
 			status: 'AVAILABLE'
 		});
+	});
+
+	it('migra los dos límites conservando el de Poco y genera la reposición necesaria sin duplicar', () => {
+		const state = createPrototypeSeed();
+		state.shopping = state.shopping.filter((item) => item.productId !== '1');
+		Object.assign(state.inventory[0], { quantity: 2, lowThreshold: 2, autoThreshold: 0 });
+		const stored = JSON.stringify(state);
+		vi.stubGlobal('window', { localStorage: { getItem: () => stored } });
+		const migrated = loadPrototypeState();
+		expect(migrated.inventory[0]).toMatchObject({ quantity: 2, lowThreshold: 2, status: 'LOW' });
+		expect('autoThreshold' in migrated.inventory[0]).toBe(false);
+		expect(migrated.shopping.filter((item) => item.productId === '1')).toHaveLength(1);
+		expect(migrated.shopping.find((item) => item.productId === '1')?.source).toBe('AUTO');
+		vi.stubGlobal('window', { localStorage: { getItem: () => JSON.stringify(migrated) } });
+		expect(loadPrototypeState().shopping.filter((item) => item.productId === '1')).toHaveLength(1);
+	});
+
+	it('la migración respeta compras existentes y no repone productos pendientes de revisión', () => {
+		const state = createPrototypeSeed();
+		Object.assign(state.inventory[0], { lowThreshold: 2, autoThreshold: 0 });
+		state.shopping.find((item) => item.productId === '1')!.status = 'PURCHASED';
+		vi.stubGlobal('window', { localStorage: { getItem: () => JSON.stringify(state) } });
+		expect(loadPrototypeState().shopping.filter((item) => item.productId === '1')).toHaveLength(1);
+		state.shopping = state.shopping.filter((item) => item.productId !== '1');
+		state.inventory[0].quantityNeedsReview = true;
+		expect(loadPrototypeState().shopping.some((item) => item.productId === '1')).toBe(false);
+	});
+
+	it('la recarga del modelo nuevo no vuelve a añadir un automático quitado o finalizado', () => {
+		const state = createPrototypeSeed();
+		state.shopping = state.shopping.filter((item) => item.productId !== '1');
+		vi.stubGlobal('window', { localStorage: { getItem: () => JSON.stringify(state) } });
+		expect(loadPrototypeState().shopping.some((item) => item.productId === '1')).toBe(false);
 	});
 
 	it('persiste el incremento neto de compra para deshacer después de recargar', () => {
@@ -141,7 +171,6 @@ describe('Persistencia y migración de cantidades', () => {
 			}
 		});
 		resetPrototype();
-		addProductToShopping('1', 3);
 		const item = getPrototypeState().shopping.find((item) => item.productId === '1')!;
 		purchaseShoppingItem(item.id, 3, true);
 		const restored = loadPrototypeState();

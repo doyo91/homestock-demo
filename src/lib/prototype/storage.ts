@@ -21,30 +21,52 @@ export function loadPrototypeState(): PrototypeState {
 
 	try {
 		const state = JSON.parse(stored) as PrototypeState;
+		const oldThresholdIds = new Set(
+			state.inventory.filter((product) => 'autoThreshold' in product).map((product) => product.id)
+		);
 		// Legacy qualitative states cannot reveal an exact count. Keep every product,
 		// use the new default provisionally, and require a visible stock review.
 		state.inventory = state.inventory.map((product) => {
 			const known = validQuantity(product.quantity);
 			const quantity = known ? product.quantity : product.status === 'OUT' ? 0 : 1;
 			const lowThreshold = validQuantity(product.lowThreshold) ? product.lowThreshold : 1;
-			const autoThreshold = validQuantity(product.autoThreshold)
-				? Math.min(product.autoThreshold, lowThreshold)
-				: 0;
-			return {
+			const migrated = {
 				...product,
 				active: product.active ?? true,
 				quantity,
 				lowThreshold,
-				autoThreshold,
 				quantityNeedsReview: known ? !!product.quantityNeedsReview : product.status !== 'OUT',
 				status: inventoryStatus(quantity, lowThreshold)
 			};
+			Reflect.deleteProperty(migrated, 'autoThreshold');
+			return migrated;
 		});
 		state.shopping = state.shopping.map((item) => ({
 			...item,
 			quantity: validQuantity(item.quantity, 1) ? item.quantity : 1,
 			purchaseDelta: validQuantity(item.purchaseDelta) ? item.purchaseDelta : null
 		}));
+		for (const product of state.inventory) {
+			if (
+				oldThresholdIds.has(product.id) &&
+				product.active &&
+				!product.quantityNeedsReview &&
+				product.replenishmentMode === 'AUTOMATIC' &&
+				product.quantity <= product.lowThreshold &&
+				!state.shopping.some((item) => item.productId === product.id)
+			) {
+				state.shopping.push({
+					id: crypto.randomUUID(),
+					name: product.name,
+					status: 'PENDING',
+					source: 'AUTO',
+					productId: product.id,
+					quantity: 1,
+					purchaseDelta: null
+				});
+			}
+		}
+
 		// Assign stable palette colors to categories saved before color support.
 		state.categories = state.categories.map((category, index) => ({
 			...category,

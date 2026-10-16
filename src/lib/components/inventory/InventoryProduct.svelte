@@ -41,7 +41,7 @@
 						class="automatic"
 						role="img"
 						aria-label="Reposición automática"
-						title={`Reposición automática cuando queden ${item.autoThreshold} o menos`}
+						title={`Reposición automática cuando queden ${item.lowThreshold} o menos`}
 					>
 						<svg
 							viewBox="0 0 24 24"

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { getActiveCategories, getActiveLocations } from '$lib/prototype/state.svelte';
 	import type { InventoryStatus, ReplenishmentMode } from '$lib/prototype/types';
 
@@ -13,16 +14,24 @@
 	interface Props {
 		initialValue?: Partial<ProductFormValue>;
 		submitLabel?: string;
-		onsubmit: (value: ProductFormValue) => void;
+		allowAddAnother?: boolean;
+		onsubmit: (value: ProductFormValue, addAnother: boolean) => boolean | void;
 	}
 
-	let { initialValue = {}, submitLabel = 'Guardar producto', onsubmit }: Props = $props();
+	let {
+		initialValue = {},
+		submitLabel = 'Guardar producto',
+		allowAddAnother = false,
+		onsubmit
+	}: Props = $props();
 
 	function getInitialValue() {
 		return initialValue;
 	}
 
 	let name = $state(getInitialValue().name ?? '');
+	let nameInput = $state<HTMLInputElement>();
+	let saving = $state(false);
 	let status = $state<InventoryStatus>(getInitialValue().status ?? 'AVAILABLE');
 	let categoryId = $state(getInitialValue().categoryId ?? '');
 	let locationId = $state(getInitialValue().locationId ?? '');
@@ -36,20 +45,35 @@
 		{ value: 'OUT', label: 'No hay' }
 	];
 
-	let canSave = $derived(name.trim().length > 0);
+	let canSave = $derived(name.trim().length > 0 && !saving);
 
-	function submit() {
+	async function submit(addAnother = false) {
 		if (!canSave) {
 			return;
 		}
 
-		onsubmit({
-			name: name.trim(),
-			status,
-			categoryId,
-			locationId,
-			replenishmentMode
-		});
+		const saved = onsubmit(
+			{
+				name: name.trim(),
+				status,
+				categoryId,
+				locationId,
+				replenishmentMode
+			},
+			addAnother
+		);
+
+		if (saved !== true) return;
+		if (!addAnother) {
+			saving = true;
+			return;
+		}
+
+		name = '';
+		status = getInitialValue().status ?? 'AVAILABLE';
+		replenishmentMode = getInitialValue().replenishmentMode ?? 'MANUAL';
+		await tick();
+		nameInput?.focus();
 	}
 </script>
 
@@ -62,7 +86,13 @@
 	<label class="field">
 		<span>Nombre</span>
 
-		<input type="text" bind:value={name} placeholder="Ej. Leche" autocomplete="off" />
+		<input
+			type="text"
+			bind:this={nameInput}
+			bind:value={name}
+			placeholder="Ej. Leche"
+			autocomplete="off"
+		/>
 	</label>
 
 	<fieldset class="field">
@@ -128,12 +158,40 @@
 		</label>
 	</fieldset>
 
-	<button class="save-button" type="submit" disabled={!canSave}>
-		{submitLabel}
-	</button>
+	<div class="form-actions">
+		<button class="save-button" type="submit" disabled={!canSave}>
+			{submitLabel}
+		</button>
+		{#if allowAddAnother}
+			<button class="save-another" type="button" disabled={!canSave} onclick={() => submit(true)}>
+				Guardar y añadir otro
+			</button>
+		{/if}
+	</div>
 </form>
 
 <style>
+	.form-actions {
+		display: grid;
+		gap: 0.75rem;
+	}
+	.save-another {
+		width: 100%;
+		min-height: 3rem;
+		padding: 0.75rem;
+		border: 1px solid var(--accent);
+		border-radius: 0.85rem;
+		background: var(--accent-soft);
+		color: var(--accent);
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.save-another:disabled {
+		border-color: var(--line);
+		background: var(--surface-soft);
+		color: var(--muted);
+		cursor: default;
+	}
 	form {
 		display: flex;
 		flex-direction: column;

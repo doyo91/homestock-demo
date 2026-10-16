@@ -120,6 +120,12 @@
 				incluidos los elementos marcados como comprados. Después puedes crear otro con el mismo
 				nombre.
 			</p>
+			<p>
+				Para crear varios productos seguidos, usa Guardar y añadir otro. Se conserva la categoría y
+				la ubicación; el nombre se vacía y el estado y la reposición vuelven a Hay y Manual. Si
+				abres el alta desde el inventario filtrado, se precargan la categoría y ubicación
+				seleccionadas.
+			</p>
 		</details>
 		<details>
 			<summary>Reposición automática y manual</summary>

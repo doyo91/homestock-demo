@@ -1,4 +1,5 @@
-import type { InventoryStatus } from '$lib/prototype/types';
+import { inventoryStatus, validQuantity } from './quantities';
+import type { PrototypeInventoryItem } from './seed';
 import { CATEGORY_PALETTE, type CategoryColor } from './seed';
 import { loadPrototypeState, resetPrototypeState, savePrototypeState } from './storage';
 
@@ -44,299 +45,283 @@ export function deleteProduct(productId: string): boolean {
 	return true;
 }
 
-export function changeInventoryStatus(productId: string, status: InventoryStatus): boolean {
-	const product = state.inventory.find((item) => item.id === productId);
-
-	if (!product || !product.active) {
-		return false;
-	}
-
-	const previousStatus = product.status;
-
-	if (previousStatus === status) {
-		return true;
-	}
-
-	product.status = status;
-
-	if (product.replenishmentMode === 'AUTOMATIC') {
-		if (status === 'OUT') {
-			const existingItem = state.shopping.find((item) => item.productId === productId);
-
-			if (!existingItem) {
-				state.shopping.push({
-					id: crypto.randomUUID(),
-					name: product.name,
-					status: 'PENDING',
-					source: 'AUTO',
-					productId: product.id,
-					previousInventoryStatus: null
-				});
-			}
-		} else if (previousStatus === 'OUT') {
-			const automaticPendingIndex = state.shopping.findIndex(
-				(item) =>
-					item.productId === productId && item.source === 'AUTO' && item.status === 'PENDING'
-			);
-
-			if (automaticPendingIndex !== -1) {
-				state.shopping.splice(automaticPendingIndex, 1);
-			}
-		}
-	}
-
-	persistPrototypeState();
-
-	return true;
-}
-
-export function addProductToShopping(productId: string): boolean {
-	const product = state.inventory.find((item) => item.id === productId);
-
-	if (!product) {
-		return false;
-	}
-
-	const alreadyExists = state.shopping.some((item) => item.productId === productId);
-
-	if (alreadyExists) {
-		return false;
-	}
-
-	state.shopping.push({
+function shoppingEntry(product: PrototypeInventoryItem, source: 'AUTO' | 'MANUAL', quantity = 1) {
+	return {
 		id: crypto.randomUUID(),
 		name: product.name,
-		status: 'PENDING',
-		source: 'MANUAL',
-		productId,
-		previousInventoryStatus: null
-	});
+		status: 'PENDING' as const,
+		source,
+		productId: product.id,
+		quantity,
+		purchaseDelta: null
+	};
+}
 
+function syncAutomaticShopping(product: PrototypeInventoryItem): void {
+	if (!product.active || product.quantityNeedsReview) return;
+	const shouldReplenish =
+		product.replenishmentMode === 'AUTOMATIC' && product.quantity <= product.autoThreshold;
+	if (shouldReplenish) {
+		if (!state.shopping.some((item) => item.productId === product.id)) {
+			state.shopping.push(shoppingEntry(product, 'AUTO'));
+		}
+	} else {
+		state.shopping = state.shopping.filter(
+			(item) =>
+				!(item.productId === product.id && item.source === 'AUTO' && item.status === 'PENDING')
+		);
+	}
+}
+
+export function changeInventoryQuantity(productId: string, quantity: number): boolean {
+	const product = getProductById(productId);
+	if (!product?.active || !validQuantity(quantity)) return false;
+	const changed = quantity !== product.quantity || product.quantityNeedsReview;
+	product.quantity = quantity;
+	product.quantityNeedsReview = false;
+	product.status = inventoryStatus(quantity, product.lowThreshold);
+	if (changed) syncAutomaticShopping(product);
 	persistPrototypeState();
-
 	return true;
 }
 
-export function addOneOffShoppingItem(name: string): boolean {
-	const trimmedName = name.trim();
-
-	if (!trimmedName) {
+export function addProductToShopping(
+	productId: string,
+	quantity = 1,
+	existingQuantity?: number
+): boolean {
+	const product = getProductById(productId);
+	if (
+		!product?.active ||
+		!validQuantity(quantity, 1) ||
+		(existingQuantity !== undefined && !validQuantity(existingQuantity)) ||
+		state.shopping.some((item) => item.productId === productId)
+	)
 		return false;
+	if (existingQuantity !== undefined) {
+		product.quantity = existingQuantity;
+		product.quantityNeedsReview = false;
+		product.status = inventoryStatus(existingQuantity, product.lowThreshold);
 	}
+	// Insert atomically with the stock correction: no second automatic entry.
+	state.shopping.push(shoppingEntry(product, 'MANUAL', quantity));
+	persistPrototypeState();
+	return true;
+}
 
+export function addOneOffShoppingItem(name: string, quantity = 1): boolean {
+	const trimmedName = name.trim();
+	if (!trimmedName || !validQuantity(quantity, 1)) return false;
 	state.shopping.push({
 		id: crypto.randomUUID(),
 		name: trimmedName,
 		status: 'PENDING',
 		source: 'MANUAL',
 		productId: null,
-		previousInventoryStatus: null
+		quantity,
+		purchaseDelta: null
 	});
-
 	persistPrototypeState();
-
 	return true;
 }
 
-export function saveShoppingItemAsProduct(name: string): string | null {
+export function saveShoppingItemAsProduct(
+	name: string,
+	quantity = 1,
+	existingQuantity = 0
+): string | null {
 	const trimmedName = name.trim();
-
-	if (!trimmedName) {
+	if (
+		!trimmedName ||
+		!validQuantity(quantity, 1) ||
+		!validQuantity(existingQuantity) ||
+		state.inventory.some(
+			(item) => item.name.trim().toLocaleLowerCase() === trimmedName.toLocaleLowerCase()
+		)
+	)
 		return null;
-	}
-
-	const normalizedName = trimmedName.toLocaleLowerCase();
-
-	const alreadyExists = state.inventory.some(
-		(item) => item.name.trim().toLocaleLowerCase() === normalizedName
-	);
-
-	if (alreadyExists) {
-		return null;
-	}
-
 	const productId = crypto.randomUUID();
-
-	state.inventory.push({
+	const product: PrototypeInventoryItem = {
 		id: productId,
 		name: trimmedName,
 		categoryId: null,
 		locationId: null,
-		status: 'OUT',
+		quantity: existingQuantity,
+		lowThreshold: 1,
+		autoThreshold: 0,
+		quantityNeedsReview: false,
+		status: inventoryStatus(existingQuantity, 1),
 		active: true,
 		replenishmentMode: 'MANUAL'
-	});
-
-	state.shopping.push({
-		id: crypto.randomUUID(),
-		name: trimmedName,
-		status: 'PENDING',
-		source: 'MANUAL',
-		productId,
-		previousInventoryStatus: null
-	});
-
+	};
+	state.inventory.push(product);
+	state.shopping.push(shoppingEntry(product, 'MANUAL', quantity));
 	persistPrototypeState();
-
 	return productId;
 }
 
-export function purchaseShoppingItem(id: string): boolean {
+export function purchaseShoppingItem(
+	id: string,
+	quantity?: number,
+	discountExisting = false,
+	existingQuantity?: number
+): boolean {
 	const item = state.shopping.find((candidate) => candidate.id === id);
-
-	if (!item || item.status !== 'PENDING') {
-		return false;
-	}
-
+	if (!item || item.status !== 'PENDING') return false;
+	const bought = quantity ?? item.quantity;
+	if (!validQuantity(bought, 1)) return false;
+	let delta = bought;
 	if (item.productId !== null) {
-		const product = state.inventory.find((candidate) => candidate.id === item.productId);
-
-		if (!product) {
+		const product = getProductById(item.productId);
+		if (
+			!product?.active ||
+			(existingQuantity !== undefined && !validQuantity(existingQuantity)) ||
+			(product.quantityNeedsReview && existingQuantity === undefined)
+		)
 			return false;
-		}
-
-		item.previousInventoryStatus = product.status;
-		product.status = 'AVAILABLE';
-	}
-
+		const current = existingQuantity ?? product.quantity;
+		if (discountExisting && current === 0) return false;
+		delta = bought - (discountExisting ? 1 : 0);
+		const total = current + delta;
+		if (!validQuantity(total)) return false;
+		product.quantity = total;
+		product.quantityNeedsReview = false;
+		product.status = inventoryStatus(total, product.lowThreshold);
+		// Buying does not enqueue another purchase, even when the total remains low.
+	} else if (discountExisting || existingQuantity !== undefined) return false;
+	item.quantity = bought;
+	item.purchaseDelta = delta;
 	item.status = 'PURCHASED';
-
 	persistPrototypeState();
-
 	return true;
 }
 
 export function undoShoppingPurchase(id: string): boolean {
 	const item = state.shopping.find((candidate) => candidate.id === id);
-
-	if (!item || item.status !== 'PURCHASED') {
-		return false;
-	}
-
+	if (!item || item.status !== 'PURCHASED') return false;
 	if (item.productId !== null) {
-		const product = state.inventory.find((candidate) => candidate.id === item.productId);
-
-		if (!product || item.previousInventoryStatus === null) {
-			return false;
+		const product = getProductById(item.productId);
+		if (!product?.active) return false;
+		// Reverse only this purchase's contribution, preserving later stock edits.
+		if (item.purchaseDelta !== null) {
+			const total = product.quantity - item.purchaseDelta;
+			if (!validQuantity(total)) return false;
+			product.quantity = total;
+			product.status = inventoryStatus(total, product.lowThreshold);
+		} else {
+			// Purchases from the old demo have no numeric contribution to reverse.
+			product.quantityNeedsReview = true;
 		}
-
-		product.status = item.previousInventoryStatus;
 	}
-
 	item.status = 'PENDING';
-	item.previousInventoryStatus = null;
-
+	item.purchaseDelta = null;
 	persistPrototypeState();
-
 	return true;
 }
 
 export function removePendingShoppingItem(id: string): boolean {
 	const index = state.shopping.findIndex((item) => item.id === id && item.status === 'PENDING');
-
-	if (index === -1) {
-		return false;
-	}
-
+	if (index === -1) return false;
 	state.shopping.splice(index, 1);
-
 	persistPrototypeState();
-
 	return true;
 }
 
 export function finalizeShopping(): number {
-	const purchasedCount = state.shopping.filter((item) => item.status === 'PURCHASED').length;
-
-	if (purchasedCount === 0) {
-		return 0;
+	const count = state.shopping.filter((item) => item.status === 'PURCHASED').length;
+	if (count > 0) {
+		state.shopping = state.shopping.filter((item) => item.status !== 'PURCHASED');
+		persistPrototypeState();
 	}
-
-	state.shopping = state.shopping.filter((item) => item.status !== 'PURCHASED');
-
-	persistPrototypeState();
-
-	return purchasedCount;
+	return count;
 }
 
 export function createProduct(
 	name: string,
-	status: InventoryStatus,
+	quantity: number,
 	categoryId: string | null,
 	locationId: string | null,
-	replenishmentMode: 'MANUAL' | 'AUTOMATIC'
+	replenishmentMode: 'MANUAL' | 'AUTOMATIC',
+	lowThreshold = 1,
+	autoThreshold = 0
 ): string | null {
 	const trimmedName = name.trim();
-
-	if (!trimmedName) {
+	if (
+		!trimmedName ||
+		!validQuantity(quantity) ||
+		!validQuantity(lowThreshold) ||
+		!validQuantity(autoThreshold) ||
+		autoThreshold > lowThreshold ||
+		state.inventory.some(
+			(item) => item.name.trim().toLocaleLowerCase() === trimmedName.toLocaleLowerCase()
+		)
+	)
 		return null;
-	}
-
-	const normalizedName = trimmedName.toLocaleLowerCase();
-
-	const alreadyExists = state.inventory.some(
-		(item) => item.name.trim().toLocaleLowerCase() === normalizedName
-	);
-
-	if (alreadyExists) {
-		return null;
-	}
-
-	const productId = crypto.randomUUID();
-
-	state.inventory.push({
-		id: productId,
+	const product: PrototypeInventoryItem = {
+		id: crypto.randomUUID(),
 		name: trimmedName,
 		categoryId: categoryId || null,
 		locationId: locationId || null,
-		status,
+		quantity,
+		lowThreshold,
+		autoThreshold,
+		quantityNeedsReview: false,
+		status: inventoryStatus(quantity, lowThreshold),
 		active: true,
 		replenishmentMode
-	});
-
+	};
+	state.inventory.push(product);
+	syncAutomaticShopping(product);
 	persistPrototypeState();
-
-	return productId;
+	return product.id;
 }
 
 export function updateProduct(
 	productId: string,
 	name: string,
-	status: InventoryStatus,
+	quantity: number,
 	categoryId: string | null,
 	locationId: string | null,
-	replenishmentMode: 'MANUAL' | 'AUTOMATIC'
+	replenishmentMode: 'MANUAL' | 'AUTOMATIC',
+	lowThreshold = 1,
+	autoThreshold = 0
 ): boolean {
-	const product = state.inventory.find((item) => item.id === productId);
-
-	if (!product) {
-		return false;
-	}
-
+	const product = getProductById(productId);
 	const trimmedName = name.trim();
-
-	if (!trimmedName) {
+	if (
+		!product?.active ||
+		!trimmedName ||
+		!validQuantity(quantity) ||
+		!validQuantity(lowThreshold) ||
+		!validQuantity(autoThreshold) ||
+		autoThreshold > lowThreshold ||
+		state.inventory.some(
+			(item) =>
+				item.id !== productId &&
+				item.name.trim().toLocaleLowerCase() === trimmedName.toLocaleLowerCase()
+		)
+	)
 		return false;
-	}
-
-	const normalizedName = trimmedName.toLocaleLowerCase();
-
-	const duplicate = state.inventory.some(
-		(item) => item.id !== productId && item.name.trim().toLocaleLowerCase() === normalizedName
-	);
-
-	if (duplicate) {
-		return false;
-	}
-
-	product.name = trimmedName;
-	product.status = status;
-	product.categoryId = categoryId || null;
-	product.locationId = locationId || null;
-	product.replenishmentMode = replenishmentMode;
-
+	const changed =
+		product.quantity !== quantity ||
+		product.lowThreshold !== lowThreshold ||
+		product.autoThreshold !== autoThreshold ||
+		product.replenishmentMode !== replenishmentMode ||
+		product.quantityNeedsReview;
+	Object.assign(product, {
+		name: trimmedName,
+		quantity,
+		lowThreshold,
+		autoThreshold,
+		categoryId: categoryId || null,
+		locationId: locationId || null,
+		replenishmentMode,
+		quantityNeedsReview: false,
+		status: inventoryStatus(quantity, lowThreshold)
+	});
+	for (const item of state.shopping) if (item.productId === productId) item.name = trimmedName;
+	if (changed) syncAutomaticShopping(product);
 	persistPrototypeState();
-
 	return true;
 }
 

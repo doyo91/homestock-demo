@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
-	changeInventoryStatus,
+	changeInventoryQuantity,
 	deleteProduct,
 	addProductToShopping,
 	addOneOffShoppingItem,
+	saveShoppingItemAsProduct,
 	purchaseShoppingItem,
 	undoShoppingPurchase,
 	finalizeShopping,
@@ -24,405 +25,187 @@ import {
 	setHouseholdName
 } from './state.svelte';
 
-describe('prototype state - Inventario ↔ Compra', () => {
-	beforeEach(() => {
-		resetPrototype();
+describe('Cantidades, reposición y compra', () => {
+	beforeEach(() => resetPrototype());
+	const product = () => getPrototypeState().inventory.find((item) => item.id === '1')!;
+	const linked = () => getPrototypeState().shopping.filter((item) => item.productId === '1');
+
+	it.each([
+		[0, 'OUT'],
+		[1, 'LOW'],
+		[2, 'AVAILABLE'],
+		[8, 'AVAILABLE']
+	] as const)('calcula el estado de %i existencias', (quantity, status) => {
+		expect(changeInventoryQuantity('1', quantity)).toBe(true);
+		expect(product().status).toBe(status);
+		expect(product().quantity).toBe(quantity);
 	});
 
-	describe('Regla 1: AUTOMATIC LOW/AVAILABLE -> OUT crea AUTO/PENDING solo si no existe elemento activo', () => {
-		it('AVAILABLE -> OUT crea AUTO/PENDING para producto AUTOMATIC', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Leche'); // AUTOMATIC, LOW
-			if (!product) throw new Error('Product not found');
-
-			changeInventoryStatus(product.id, 'OUT');
-
-			const shoppingItem = state.shopping.find((s) => s.productId === product.id);
-			expect(shoppingItem).toBeDefined();
-			expect(shoppingItem?.source).toBe('AUTO');
-			expect(shoppingItem?.status).toBe('PENDING');
-		});
-
-		it('LOW -> OUT crea AUTO/PENDING para producto AUTOMATIC', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Leche'); // AUTOMATIC, LOW
-			if (!product) throw new Error('Product not found');
-
-			changeInventoryStatus(product.id, 'OUT');
-
-			const shoppingItem = state.shopping.find((s) => s.productId === product.id);
-			expect(shoppingItem).toBeDefined();
-			expect(shoppingItem?.source).toBe('AUTO');
-		});
-
-		it('no crea elemento si ya existe uno activo para el producto', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Leche');
-			if (!product) throw new Error('Product not found');
-
-			// First transition creates the item
-			changeInventoryStatus(product.id, 'OUT');
-			const firstCount = state.shopping.filter((s) => s.productId === product.id).length;
-
-			// Second transition should not duplicate
-			changeInventoryStatus(product.id, 'OUT');
-			const secondCount = state.shopping.filter((s) => s.productId === product.id).length;
-
-			expect(firstCount).toBe(1);
-			expect(secondCount).toBe(1);
-		});
+	it('admite umbrales iguales y repone al alcanzar el límite sin duplicar', () => {
+		expect(updateProduct('1', 'Leche', 3, null, null, 'AUTOMATIC', 2, 2)).toBe(true);
+		expect(linked()).toHaveLength(0);
+		changeInventoryQuantity('1', 2);
+		expect(product().status).toBe('LOW');
+		expect(linked()).toHaveLength(1);
+		expect(linked()[0]).toMatchObject({ quantity: 1, source: 'AUTO', status: 'PENDING' });
+		changeInventoryQuantity('1', 1);
+		expect(linked()).toHaveLength(1);
 	});
 
-	describe('Regla 2: Permanecer en OUT no crea duplicados', () => {
-		it('OUT -> OUT no crea duplicados', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Papel higiénico'); // AUTOMATIC, OUT
-			if (!product) throw new Error('Product not found');
-
-			const initialCount = state.shopping.filter((s) => s.productId === product.id).length;
-
-			changeInventoryStatus(product.id, 'OUT');
-			const finalCount = state.shopping.filter((s) => s.productId === product.id).length;
-
-			expect(initialCount).toBe(finalCount);
-		});
+	it('separa Poco y reposición, y solo retira pendientes automáticos al reponer fuera de la app', () => {
+		updateProduct('1', 'Leche', 3, null, null, 'AUTOMATIC', 2, 1);
+		changeInventoryQuantity('1', 2);
+		expect(linked()).toHaveLength(0);
+		changeInventoryQuantity('1', 1);
+		expect(linked()).toHaveLength(1);
+		changeInventoryQuantity('1', 4);
+		expect(linked()).toHaveLength(0);
+		addProductToShopping('1', 2);
+		changeInventoryQuantity('1', 0);
+		changeInventoryQuantity('1', 4);
+		expect(linked()[0].source).toBe('MANUAL');
 	});
 
-	describe('Regla 3: OUT -> LOW/AVAILABLE elimina únicamente AUTO/PENDING', () => {
-		it('OUT -> AVAILABLE elimina AUTO/PENDING', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Papel higiénico'); // AUTOMATIC, OUT
-			if (!product) throw new Error('Product not found');
-
-			const initialShoppingCount = state.shopping.filter((s) => s.productId === product.id).length;
-
-			changeInventoryStatus(product.id, 'AVAILABLE');
-
-			const finalShoppingCount = state.shopping.filter((s) => s.productId === product.id).length;
-			expect(finalShoppingCount).toBe(initialShoppingCount - 1);
-		});
-
-		it('OUT -> LOW elimina AUTO/PENDING', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Papel higiénico'); // AUTOMATIC, OUT
-			if (!product) throw new Error('Product not found');
-
-			const initialShoppingCount = state.shopping.filter((s) => s.productId === product.id).length;
-
-			changeInventoryStatus(product.id, 'LOW');
-
-			const finalShoppingCount = state.shopping.filter((s) => s.productId === product.id).length;
-			expect(finalShoppingCount).toBe(initialShoppingCount - 1);
-		});
-
-		it('no elimina elementos MANUAL', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Huevos'); // MANUAL, AVAILABLE
-			if (!product) throw new Error('Product not found');
-
-			// Add manual item
-			addProductToShopping(product.id);
-			changeInventoryStatus(product.id, 'OUT');
-
-			const manualItem = state.shopping.find(
-				(s) => s.productId === product.id && s.source === 'MANUAL'
-			);
-			expect(manualItem).toBeDefined();
-
-			// Correct back to AVAILABLE
-			changeInventoryStatus(product.id, 'AVAILABLE');
-
-			const manualItemAfter = state.shopping.find(
-				(s) => s.productId === product.id && s.source === 'MANUAL'
-			);
-			expect(manualItemAfter).toBeDefined();
-		});
-
-		it('no elimina elementos PURCHASED', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Papel higiénico'); // AUTOMATIC, OUT
-			if (!product) throw new Error('Product not found');
-
-			const autoItem = state.shopping.find(
-				(s) => s.productId === product.id && s.source === 'AUTO'
-			);
-			if (!autoItem) throw new Error('Auto item not found');
-
-			// Purchase the item
-			purchaseShoppingItem(autoItem.id);
-
-			// Correct inventory
-			changeInventoryStatus(product.id, 'AVAILABLE');
-
-			const purchasedItem = state.shopping.find((s) => s.id === autoItem.id);
-			expect(purchasedItem).toBeDefined();
-			expect(purchasedItem?.status).toBe('PURCHASED');
-		});
+	it('crear o configurar un automático ya bajo mínimos genera su pendiente', () => {
+		const id = createProduct('Arroz', 1, null, null, 'AUTOMATIC', 2, 1)!;
+		expect(getPrototypeState().shopping.find((item) => item.productId === id)?.source).toBe('AUTO');
+		expect(updateProduct('1', 'Leche', 1, null, null, 'AUTOMATIC', 1, 1)).toBe(true);
+		expect(linked()).toHaveLength(1);
 	});
 
-	describe('Regla 4: LOW no añade automáticamente', () => {
-		it('AVAILABLE -> LOW no crea elemento en Compra', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Huevos'); // MANUAL, AVAILABLE
-			if (!product) throw new Error('Product not found');
-
-			changeInventoryStatus(product.id, 'LOW');
-
-			const shoppingItem = state.shopping.find((s) => s.productId === product.id);
-			expect(shoppingItem).toBeUndefined();
-		});
-
-		it('OUT -> LOW no crea elemento en Compra', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Papel higiénico'); // AUTOMATIC, OUT
-			if (!product) throw new Error('Product not found');
-
-			changeInventoryStatus(product.id, 'LOW');
-
-			const shoppingItem = state.shopping.find(
-				(s) => s.productId === product.id && s.status === 'PENDING'
-			);
-			expect(shoppingItem).toBeUndefined();
-		});
+	it('no añade productos manuales al llegar a cero', () => {
+		changeInventoryQuantity('2', 0);
+		expect(getPrototypeState().shopping.some((item) => item.productId === '2')).toBe(false);
 	});
 
-	describe('Regla 5: Comprar pone AVAILABLE y mantiene ShoppingItem como PURCHASED', () => {
-		it('compra producto asociado guarda previousInventoryStatus y pone AVAILABLE', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Papel higiénico'); // AUTOMATIC, OUT
-			if (!product) throw new Error('Product not found');
-
-			const autoItem = state.shopping.find(
-				(s) => s.productId === product.id && s.source === 'AUTO'
-			);
-			if (!autoItem) throw new Error('Auto item not found');
-
-			purchaseShoppingItem(autoItem.id);
-
-			expect(product.status).toBe('AVAILABLE');
-
-			const purchasedItem = state.shopping.find((s) => s.id === autoItem.id);
-			expect(purchasedItem?.status).toBe('PURCHASED');
-			expect(purchasedItem?.previousInventoryStatus).toBe('OUT');
-		});
-
-		it('no elimina el ShoppingItem al comprar', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Papel higiénico');
-			if (!product) throw new Error('Product not found');
-
-			const autoItem = state.shopping.find((s) => s.productId === product.id);
-			if (!autoItem) throw new Error('Auto item not found');
-
-			const initialCount = state.shopping.length;
-
-			purchaseShoppingItem(autoItem.id);
-
-			const finalCount = state.shopping.length;
-			expect(finalCount).toBe(initialCount);
-		});
+	it('añade y corrige existencias en una sola operación sin duplicados automáticos', () => {
+		expect(addProductToShopping('1', 3, 0)).toBe(true);
+		expect(product()).toMatchObject({ quantity: 0, status: 'OUT' });
+		expect(linked()).toHaveLength(1);
+		expect(linked()[0]).toMatchObject({ quantity: 3, source: 'MANUAL' });
+		expect(addProductToShopping('1', 2, 9)).toBe(false);
+		expect(product().quantity).toBe(0);
 	});
 
-	describe('Regla 6: Deshacer restaura estado anterior y vuelve a PENDING', () => {
-		it('deshace compra restaurando OUT y volviendo a PENDING', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Papel higiénico'); // AUTOMATIC, OUT
-			if (!product) throw new Error('Product not found');
-
-			const autoItem = state.shopping.find((s) => s.productId === product.id);
-			if (!autoItem) throw new Error('Auto item not found');
-
-			purchaseShoppingItem(autoItem.id);
-			expect(product.status).toBe('AVAILABLE');
-
-			undoShoppingPurchase(autoItem.id);
-
-			expect(product.status).toBe('OUT');
-
-			const undoneItem = state.shopping.find((s) => s.id === autoItem.id);
-			expect(undoneItem?.status).toBe('PENDING');
-			expect(undoneItem?.previousInventoryStatus).toBeNull();
-		});
-
-		it('deshace compra restaurando LOW y volviendo a PENDING', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Leche'); // AUTOMATIC, LOW
-			if (!product) throw new Error('Product not found');
-
-			// Manually create item and set it to OUT
-			changeInventoryStatus(product.id, 'OUT');
-			const autoItem = state.shopping.find((s) => s.productId === product.id);
-			if (!autoItem) throw new Error('Auto item not found');
-
-			// Change to LOW then purchase
-			changeInventoryStatus(product.id, 'LOW');
-			addProductToShopping(product.id); // Manual add since auto was removed
-			const manualItem = state.shopping.find(
-				(s) => s.productId === product.id && s.source === 'MANUAL'
-			);
-			if (!manualItem) throw new Error('Manual item not found');
-
-			purchaseShoppingItem(manualItem.id);
-			expect(product.status).toBe('AVAILABLE');
-
-			undoShoppingPurchase(manualItem.id);
-
-			expect(product.status).toBe('LOW');
-
-			const undoneItem = state.shopping.find((s) => s.id === manualItem.id);
-			expect(undoneItem?.status).toBe('PENDING');
-		});
-
-		it('no crea duplicado al deshacer', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Papel higiénico');
-			if (!product) throw new Error('Product not found');
-
-			const autoItem = state.shopping.find((s) => s.productId === product.id);
-			if (!autoItem) throw new Error('Auto item not found');
-
-			const initialCount = state.shopping.filter((s) => s.productId === product.id).length;
-
-			purchaseShoppingItem(autoItem.id);
-			undoShoppingPurchase(autoItem.id);
-
-			const finalCount = state.shopping.filter((s) => s.productId === product.id).length;
-			expect(finalCount).toBe(initialCount);
-		});
+	it('suma lo realmente comprado y descuenta una existente solo si se solicita', () => {
+		addProductToShopping('1', 5);
+		const item = linked()[0];
+		expect(purchaseShoppingItem(item.id, 2, true)).toBe(true);
+		expect(product()).toMatchObject({ quantity: 2, status: 'AVAILABLE' });
+		expect(item).toMatchObject({ quantity: 2, purchaseDelta: 1, status: 'PURCHASED' });
+		expect(purchaseShoppingItem(item.id, 2)).toBe(false);
+		expect(product().quantity).toBe(2);
+		expect(undoShoppingPurchase(item.id)).toBe(true);
+		expect(product()).toMatchObject({ quantity: 1, status: 'LOW' });
+		expect(item).toMatchObject({ status: 'PENDING', purchaseDelta: null });
 	});
 
-	describe('Regla 7: Finalizar elimina solo PURCHASED, PENDING permanece', () => {
-		it('finalizar elimina PURCHASED y mantiene PENDING', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product1 = state.inventory.find((p) => p.name === 'Papel higiénico');
-			const product2 = state.inventory.find((p) => p.name === 'Leche');
-			if (!product1 || !product2) throw new Error('Products not found');
-
-			// Purchase first item
-			const autoItem = state.shopping.find((s) => s.productId === product1.id);
-			if (!autoItem) throw new Error('Auto item not found');
-			purchaseShoppingItem(autoItem.id);
-
-			// Add second item (stays pending)
-			changeInventoryStatus(product2.id, 'OUT');
-
-			const pendingCount = state.shopping.filter((s) => s.status === 'PENDING').length;
-
-			finalizeShopping();
-
-			const newPendingCount = state.shopping.filter((s) => s.status === 'PENDING').length;
-			const newPurchasedCount = state.shopping.filter((s) => s.status === 'PURCHASED').length;
-
-			expect(newPendingCount).toBe(pendingCount);
-			expect(newPurchasedCount).toBe(0);
-		});
-
-		it('finalizar no hace nada si no hay PURCHASED', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-
-			const initialLength = state.shopping.length;
-
-			const result = finalizeShopping();
-
-			expect(result).toBe(0);
-			expect(state.shopping.length).toBe(initialLength);
-		});
+	it('no descuenta existencias cuando no hay y mantiene la operación atómica', () => {
+		addProductToShopping('1', 2, 0);
+		const item = linked()[0];
+		expect(purchaseShoppingItem(item.id, 2, true)).toBe(false);
+		expect(product().quantity).toBe(0);
+		expect(item.status).toBe('PENDING');
+		expect(purchaseShoppingItem(item.id, 2)).toBe(true);
+		expect(product().quantity).toBe(2);
 	});
 
-	describe('Regla 8: Artículo puntual (productId=null) no modifica inventario', () => {
-		it('comprar artículo puntual no toca inventario', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-
-			addOneOffShoppingItem('Bombillas');
-			const oneOffItem = state.shopping.find((s) => s.name === 'Bombillas');
-			if (!oneOffItem) throw new Error('One-off item not found');
-
-			const initialInventoryLength = state.inventory.length;
-
-			purchaseShoppingItem(oneOffItem.id);
-
-			expect(state.inventory.length).toBe(initialInventoryLength);
-
-			const purchasedItem = state.shopping.find((s) => s.id === oneOffItem.id);
-			expect(purchasedItem?.status).toBe('PURCHASED');
-			expect(purchasedItem?.previousInventoryStatus).toBeNull();
-		});
-
-		it('deshacer artículo puntual no toca inventario', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-
-			addOneOffShoppingItem('Bombillas');
-			const oneOffItem = state.shopping.find((s) => s.name === 'Bombillas');
-			if (!oneOffItem) throw new Error('One-off item not found');
-
-			purchaseShoppingItem(oneOffItem.id);
-			undoShoppingPurchase(oneOffItem.id);
-
-			const undoneItem = state.shopping.find((s) => s.id === oneOffItem.id);
-			expect(undoneItem?.status).toBe('PENDING');
-			expect(undoneItem?.previousInventoryStatus).toBeNull();
-		});
+	it('no repone otra vez al comprar bajo mínimos ni al finalizar', () => {
+		updateProduct('1', 'Leche', 0, null, null, 'AUTOMATIC', 3, 2);
+		const item = linked()[0];
+		purchaseShoppingItem(item.id, 1);
+		expect(product().status).toBe('LOW');
+		expect(linked()).toHaveLength(1);
+		expect(finalizeShopping()).toBe(1);
+		expect(linked()).toHaveLength(0);
+		changeInventoryQuantity('1', 0);
+		expect(linked()).toHaveLength(1);
 	});
 
-	describe('Regla 9: Persistencia localStorage', () => {
-		it('estado persiste tras cambios', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Leche');
-			if (!product) throw new Error('Product not found');
+	it('deshacer conserva los ajustes posteriores de inventario', () => {
+		addProductToShopping('1', 2);
+		const item = linked()[0];
+		purchaseShoppingItem(item.id);
+		changeInventoryQuantity('1', 5);
+		expect(undoShoppingPurchase(item.id)).toBe(true);
+		expect(product().quantity).toBe(3);
+		expect(linked()).toHaveLength(1);
+	});
 
-			changeInventoryStatus(product.id, 'OUT');
+	it('impide deshacer si produciría existencias negativas, sin modificar datos', () => {
+		addProductToShopping('1', 3);
+		const item = linked()[0];
+		purchaseShoppingItem(item.id);
+		changeInventoryQuantity('1', 1);
+		const before = JSON.stringify(getPrototypeState());
+		expect(undoShoppingPurchase(item.id)).toBe(false);
+		expect(JSON.stringify(getPrototypeState())).toBe(before);
+	});
 
-			// Simulate reload by creating a new module instance
-			// Since we can't actually reload the module in tests, we verify that
-			// the state is still accessible after the change
-			const currentState = getPrototypeState();
+	it('deshace una compra con incremento neto cero sin descontar otra unidad', () => {
+		addProductToShopping('1');
+		const item = linked()[0];
+		purchaseShoppingItem(item.id, 1, true);
+		expect(product().quantity).toBe(1);
+		expect(undoShoppingPurchase(item.id)).toBe(true);
+		expect(product().quantity).toBe(1);
+	});
 
-			const currentProduct = currentState.inventory.find((p) => p.id === product.id);
-			expect(currentProduct?.status).toBe('OUT');
+	it('requiere revisar recuentos antiguos antes de comprar y guarda la corrección explícita', () => {
+		product().quantityNeedsReview = true;
+		addProductToShopping('1', 2);
+		const item = linked()[0];
+		expect(purchaseShoppingItem(item.id)).toBe(false);
+		expect(purchaseShoppingItem(item.id, 2, false, 4)).toBe(true);
+		expect(product()).toMatchObject({ quantity: 6, quantityNeedsReview: false });
+		undoShoppingPurchase(item.id);
+		expect(product().quantity).toBe(4);
+	});
 
-			const shoppingItem = currentState.shopping.find((s) => s.productId === product.id);
-			expect(shoppingItem).toBeDefined();
-			expect(shoppingItem?.source).toBe('AUTO');
-		});
+	it('conserva artículos independientes y cantidades al comprar, deshacer y finalizar', () => {
+		addOneOffShoppingItem('Pan extra', 4);
+		const item = getPrototypeState().shopping.find((item) => item.name === 'Pan extra')!;
+		const before = JSON.stringify(getPrototypeState().inventory);
+		expect(purchaseShoppingItem(item.id, 3)).toBe(true);
+		expect(item.quantity).toBe(3);
+		expect(undoShoppingPurchase(item.id)).toBe(true);
+		purchaseShoppingItem(item.id);
+		expect(finalizeShopping()).toBe(1);
+		expect(JSON.stringify(getPrototypeState().inventory)).toBe(before);
+		expect(getPrototypeState().shopping.some((item) => item.name === 'Pan')).toBe(true);
+	});
 
-		it('resetPrototype limpia localStorage', () => {
-			resetPrototype();
-			const state = getPrototypeState();
-			const product = state.inventory.find((p) => p.name === 'Leche');
-			if (!product) throw new Error('Product not found');
+	it('crea desde Compra con cero existencias por defecto y permite indicar las que había', () => {
+		const id = saveShoppingItemAsProduct('Arroz', 3)!;
+		const state = getPrototypeState();
+		expect(state.inventory.find((item) => item.id === id)?.quantity).toBe(0);
+		purchaseShoppingItem(state.shopping.find((item) => item.productId === id)!.id);
+		expect(state.inventory.find((item) => item.id === id)?.quantity).toBe(3);
+		const second = saveShoppingItemAsProduct('Lentejas', 2, 4)!;
+		expect(state.inventory.find((item) => item.id === second)?.quantity).toBe(4);
+		expect(saveShoppingItemAsProduct(' ARROZ ', 1)).toBeNull();
+	});
 
-			changeInventoryStatus(product.id, 'OUT');
+	it('renombrar sincroniza las líneas de compra y cambiar a manual conserva solo los pendientes manuales', () => {
+		updateProduct('1', 'Leche', 0, null, null, 'AUTOMATIC');
+		expect(linked()).toHaveLength(1);
+		updateProduct('1', 'Leche entera', 0, null, null, 'MANUAL');
+		expect(linked()).toHaveLength(0);
+		addProductToShopping('1');
+		updateProduct('1', 'Leche nueva', 2, null, null, 'MANUAL');
+		expect(linked()[0].name).toBe('Leche nueva');
+	});
 
-			// Reset
-			resetPrototype();
-			const resetState = getPrototypeState();
-
-			const resetProduct = resetState.inventory.find((p) => p.id === product.id);
-			expect(resetProduct?.status).toBe('LOW'); // Back to initial state
-
-			const shoppingItem = resetState.shopping.find((s) => s.productId === product.id);
-			expect(shoppingItem).toBeUndefined();
-		});
+	it('rechaza umbrales invertidos y cantidades no enteras o negativas sin cambios', () => {
+		const before = JSON.stringify(getPrototypeState());
+		expect(createProduct('Inválido', 1, null, null, 'AUTOMATIC', 1, 2)).toBeNull();
+		expect(updateProduct('1', 'Leche', 1, null, null, 'AUTOMATIC', 1, 2)).toBe(false);
+		for (const quantity of [-1, 1.5, NaN, Infinity, 1000000]) {
+			expect(changeInventoryQuantity('1', quantity)).toBe(false);
+			expect(addProductToShopping('1', quantity)).toBe(false);
+		}
+		expect(addProductToShopping('1', 0)).toBe(false);
+		expect(JSON.stringify(getPrototypeState())).toBe(before);
 	});
 });
 
@@ -436,13 +219,7 @@ describe('prototype state - Products', () => {
 			const categoryId = getPrototypeState().categories[0].id;
 			const locationId = getPrototypeState().locations[0].id;
 
-			const productId = createProduct(
-				'Nuevo Producto',
-				'AVAILABLE',
-				categoryId,
-				locationId,
-				'MANUAL'
-			);
+			const productId = createProduct('Nuevo Producto', 3, categoryId, locationId, 'MANUAL');
 
 			expect(productId).toBeTruthy();
 
@@ -457,15 +234,15 @@ describe('prototype state - Products', () => {
 		});
 
 		it('previene duplicados por nombre normalizado', () => {
-			const productId1 = createProduct('  NuevoProducto  ', 'AVAILABLE', null, null, 'MANUAL');
+			const productId1 = createProduct('  NuevoProducto  ', 3, null, null, 'MANUAL');
 			expect(productId1).toBeTruthy();
 
-			const productId2 = createProduct('nuevoproducto', 'AVAILABLE', null, null, 'MANUAL');
+			const productId2 = createProduct('nuevoproducto', 3, null, null, 'MANUAL');
 			expect(productId2).toBeNull();
 		});
 
 		it('acepta categoryId y locationId null', () => {
-			const productId = createProduct('Producto sin categoría', 'LOW', null, null, 'AUTOMATIC');
+			const productId = createProduct('Producto sin categoría', 1, null, null, 'AUTOMATIC');
 
 			expect(productId).toBeTruthy();
 
@@ -486,7 +263,7 @@ describe('prototype state - Products', () => {
 			const result = updateProduct(
 				product.id,
 				'Nombre Actualizado',
-				'LOW',
+				1,
 				categoryId,
 				null,
 				'AUTOMATIC'
@@ -507,13 +284,13 @@ describe('prototype state - Products', () => {
 			const product = state.inventory[0];
 			const existingName = state.inventory[1].name;
 
-			const result = updateProduct(product.id, existingName, 'AVAILABLE', null, null, 'MANUAL');
+			const result = updateProduct(product.id, existingName, 3, null, null, 'MANUAL');
 
 			expect(result).toBe(false);
 		});
 
 		it('falla si producto no existe', () => {
-			const result = updateProduct('nonexistent', 'Nombre', 'AVAILABLE', null, null, 'MANUAL');
+			const result = updateProduct('nonexistent', 'Nombre', 3, null, null, 'MANUAL');
 
 			expect(result).toBe(false);
 		});
@@ -830,7 +607,7 @@ describe('Eliminar productos', () => {
 		const state = getPrototypeState();
 		expect(deleteProduct('2')).toBe(true);
 		expect(state.inventory.some((product) => product.id === '2')).toBe(false);
-		const id = createProduct('  HUEVOS  ', 'AVAILABLE', null, null, 'MANUAL');
+		const id = createProduct('  HUEVOS  ', 3, null, null, 'MANUAL');
 		expect(id).not.toBeNull();
 		expect(id).not.toBe('2');
 	});
@@ -860,7 +637,7 @@ describe('Eliminar productos', () => {
 		const state = getPrototypeState();
 		expect(deleteProduct('1')).toBe(true);
 		expect(state.inventory.some((product) => product.id === '1')).toBe(false);
-		expect(changeInventoryStatus('1', 'OUT')).toBe(false);
+		expect(changeInventoryQuantity('1', 0)).toBe(false);
 		expect(addProductToShopping('1')).toBe(false);
 		expect(state.shopping.some((item) => item.productId === '1')).toBe(false);
 	});
@@ -870,7 +647,7 @@ describe('Eliminar productos', () => {
 		state.inventory[0].active = false;
 		expect(deleteProduct(state.inventory[0].id)).toBe(true);
 		expect(state.inventory.some((product) => product.name === 'Leche')).toBe(false);
-		expect(createProduct('Leche', 'LOW', null, null, 'MANUAL')).not.toBeNull();
+		expect(createProduct('Leche', 1, null, null, 'MANUAL')).not.toBeNull();
 	});
 
 	it('rechaza identificadores inexistentes y eliminaciones repetidas sin modificar otros datos', () => {

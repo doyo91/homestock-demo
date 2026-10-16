@@ -30,7 +30,7 @@
 		class="product-button"
 		type="button"
 		aria-haspopup="dialog"
-		aria-label={`Gestionar ${item.name}, ${statusLabel}`}
+		aria-label={`Gestionar ${item.name}, ${item.quantity}, ${statusLabel}`}
 		onclick={() => onOpen(item.id)}
 	>
 		<span class="product-info">
@@ -41,7 +41,7 @@
 						class="automatic"
 						role="img"
 						aria-label="Reposición automática"
-						title="Reposición automática al pasar a No hay"
+						title={`Reposición automática cuando queden ${item.autoThreshold} o menos`}
 					>
 						<svg
 							viewBox="0 0 24 24"
@@ -58,19 +58,26 @@
 				{/if}
 			</span>
 			<span class="product-meta">{locationName} · {categoryName}</span>
+			{#if item.quantityNeedsReview}<span class="review">Revisar cantidad</span>{/if}
 		</span>
 		<span
 			class="current-status"
 			class:low={item.status === 'LOW'}
 			class:out={item.status === 'OUT'}
 		>
-			<span class="status-dot" aria-hidden="true"></span>{statusLabel}
+			<span class="status-dot" aria-hidden="true"></span>{item.quantity} · {statusLabel}
 		</span>
 		<span class="chevron" aria-hidden="true">›</span>
 	</button>
 </article>
 
 <style>
+	.review {
+		display: block;
+		margin-top: 0.2rem;
+		color: var(--warning);
+		font-size: 0.75rem;
+	}
 	.product {
 		border: 1px solid color-mix(in srgb, var(--category-tone, var(--line)) 30%, var(--line));
 		border-left: 3px solid var(--category-tone, var(--line));

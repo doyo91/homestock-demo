@@ -2,20 +2,21 @@
 	import { onMount, tick } from 'svelte';
 	import { resolve } from '$app/paths';
 	import type { PrototypeInventoryItem } from '$lib/prototype/seed';
-	import type { InventoryStatus } from '$lib/prototype/types';
+	import QuantityInput from '../QuantityInput.svelte';
+	import { validQuantity, statusLabel } from '$lib/prototype/quantities';
 
 	let {
 		item,
 		alreadyInShopping,
-		onStatusChange,
+		onQuantityChange,
 		onAddToShopping,
 		onDelete,
 		onClose
 	}: {
 		item: PrototypeInventoryItem;
 		alreadyInShopping: boolean;
-		onStatusChange: (id: string, status: InventoryStatus) => void;
-		onAddToShopping: (id: string) => void;
+		onQuantityChange: (id: string, quantity: number) => void;
+		onAddToShopping: (id: string, existing: number) => void;
 		onDelete: (id: string) => void;
 		onClose: () => void;
 	} = $props();
@@ -29,11 +30,10 @@
 		await tick();
 		cancelDeleteButton?.focus();
 	}
-	const statuses: { value: InventoryStatus; label: string }[] = [
-		{ value: 'AVAILABLE', label: 'Hay' },
-		{ value: 'LOW', label: 'Poco' },
-		{ value: 'OUT', label: 'No hay' }
-	];
+	function initialQuantity() {
+		return item.quantity;
+	}
+	let quantity = $state(initialQuantity());
 
 	onMount(() => {
 		const previousOverflow = document.body.style.overflow;
@@ -76,7 +76,7 @@
 		<div>
 			<h2 id="product-panel-title">{deleting ? `¿Eliminar ${item.name}?` : item.name}</h2>
 			{#if !deleting && item.replenishmentMode === 'AUTOMATIC'}
-				<p>Reposición automática al pasar a No hay</p>
+				<p>Reposición automática cuando queden {item.autoThreshold} o menos</p>
 			{/if}
 		</div>
 		<button class="close" type="button" aria-label="Cerrar panel" onclick={onClose}>×</button>
@@ -101,24 +101,32 @@
 			</div>
 		</div>
 	{:else}
-		<p class="label">Estado del inventario</p>
-		<div class="status-selector" role="group" aria-label="Estado del inventario">
-			{#each statuses as status (status.value)}
-				<button
-					type="button"
-					class:active={item.status === status.value}
-					class:low={status.value === 'LOW'}
-					class:out={status.value === 'OUT'}
-					aria-pressed={item.status === status.value}
-					onclick={() => onStatusChange(item.id, status.value)}
-				>
-					{status.label}
-				</button>
-			{/each}
-		</div>
+		{#if item.quantityNeedsReview}<p class="review">
+				Cantidad inicial provisional: revisa cuánto queda realmente y guárdalo.
+			</p>{/if}
+		<form
+			onsubmit={(event) => {
+				event.preventDefault();
+				if (validQuantity(quantity)) onQuantityChange(item.id, quantity);
+			}}
+		>
+			<QuantityInput label="Quedan en casa" bind:value={quantity} />
+			<p class="label" aria-live="polite">
+				Estado: {validQuantity(quantity)
+					? statusLabel(quantity, item.lowThreshold)
+					: 'Revisa la cantidad'}
+			</p>
+			<button class="save-quantity" type="submit" disabled={!validQuantity(quantity)}
+				>Guardar cantidad</button
+			>
+		</form>
 
 		<div class="actions">
-			<button type="button" disabled={alreadyInShopping} onclick={() => onAddToShopping(item.id)}>
+			<button
+				type="button"
+				disabled={alreadyInShopping || !validQuantity(quantity)}
+				onclick={() => onAddToShopping(item.id, quantity)}
+			>
 				{alreadyInShopping ? 'Ya está en Compra' : 'Añadir a compra'}
 			</button>
 			<a href={resolve('/products/[id]/edit', { id: item.id })}>Editar producto</a>
@@ -130,6 +138,25 @@
 </dialog>
 
 <style>
+	.review {
+		padding: 0.85rem;
+		color: var(--warning);
+		background: var(--warning-soft);
+		border-radius: 0.75rem;
+		font-size: 0.85rem;
+		line-height: 1.5;
+	}
+	.save-quantity {
+		width: 100%;
+		min-height: 3rem;
+		margin-top: 1rem;
+		padding: 0.75rem;
+		border: 0;
+		border-radius: 0.75rem;
+		background: var(--accent);
+		color: var(--on-accent);
+		font-weight: 600;
+	}
 	dialog {
 		position: fixed;
 		inset: auto 0 0;
@@ -187,35 +214,6 @@
 		margin: 1.25rem 0 0.5rem;
 		font-size: 0.85rem;
 		font-weight: 600;
-	}
-	.status-selector {
-		display: flex;
-		gap: 0.35rem;
-		padding: 0.3rem;
-		border-radius: 0.85rem;
-		background: var(--surface-soft);
-	}
-	.status-selector button {
-		flex: 1;
-		min-height: 2.75rem;
-		padding: 0.5rem;
-		border: 0;
-		border-radius: 0.65rem;
-		background: transparent;
-		color: var(--muted);
-	}
-	.status-selector button.active {
-		background: var(--success-soft);
-		color: var(--success);
-		font-weight: 700;
-	}
-	.status-selector button.low.active {
-		background: var(--warning-soft);
-		color: var(--warning);
-	}
-	.status-selector button.out.active {
-		background: var(--danger-soft);
-		color: var(--danger);
 	}
 	.actions {
 		display: grid;

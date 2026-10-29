@@ -1,9 +1,10 @@
 <script lang="ts">
+	import type { TrackingMode, InventoryStatus } from '$lib/prototype/types';
 	import { createFeedback } from '$lib/prototype/feedback.svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import ProductForm from '$lib/components/ProductForm.svelte';
-	import { getProductById, updateProduct } from '$lib/prototype/state.svelte';
+	import { getProductById, getPrototypeState, updateProduct } from '$lib/prototype/state.svelte';
 
 	const productId = page.params.id;
 
@@ -12,6 +13,8 @@
 	const initialValue = product
 		? {
 				name: product.name,
+				trackingMode: product.trackingMode ?? 'QUANTITY',
+				status: product.status,
 				quantity: product.quantity,
 				lowThreshold: product.lowThreshold,
 				packSize: product.packSize ?? null,
@@ -24,6 +27,8 @@
 	const feedback = createFeedback();
 
 	function saveProduct(value: {
+		trackingMode: TrackingMode;
+		status: InventoryStatus;
 		name: string;
 		quantity: number;
 		lowThreshold: number;
@@ -44,7 +49,9 @@
 			value.locationId || null,
 			value.replenishmentMode,
 			value.lowThreshold,
-			value.packSize
+			value.packSize,
+			value.trackingMode,
+			value.status
 		);
 
 		if (success) {
@@ -53,7 +60,10 @@
 				window.location.href = resolve('/');
 			}, 500);
 		} else {
-			feedback.show('Ya existe un producto con ese nombre.', true);
+			feedback.show(
+				'No se ha podido guardar. Revisa el nombre y finaliza o deshaz la compra antes de cambiar el modo.',
+				true
+			);
 		}
 	}
 </script>
@@ -88,7 +98,14 @@
 		{#if product.quantityNeedsReview}<p class="feedback">
 				Revisa la cantidad provisional antes de guardar.
 			</p>{/if}
-		<ProductForm {initialValue} submitLabel="Guardar cambios" onsubmit={saveProduct} />
+		<ProductForm
+			{initialValue}
+			modeChangeLocked={getPrototypeState().shopping.some(
+				(item) => item.productId === product.id && item.status === 'PURCHASED'
+			)}
+			submitLabel="Guardar cambios"
+			onsubmit={saveProduct}
+		/>
 	{:else}
 		<div class="not-found">
 			<h2>Producto no encontrado</h2>

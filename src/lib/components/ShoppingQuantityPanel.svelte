@@ -2,23 +2,29 @@
 	import ActionSheet from './ActionSheet.svelte';
 	import QuantityInput from './QuantityInput.svelte';
 	import { validQuantity } from '$lib/prototype/quantities';
-	import { addProductToShopping, purchaseShoppingItem } from '$lib/prototype/state.svelte';
+	import {
+		addProductToShopping,
+		purchaseShoppingItem,
+		updateShoppingReminder
+	} from '$lib/prototype/state.svelte';
 	import type { PrototypeInventoryItem, PrototypeShoppingItem } from '$lib/prototype/seed';
 	let {
 		product,
 		item,
 		initialExisting,
+		editOnly = false,
 		onClose,
 		onSaved
 	}: {
 		product?: PrototypeInventoryItem;
 		item?: PrototypeShoppingItem;
 		initialExisting?: number;
+		editOnly?: boolean;
 		onClose: () => void;
 		onSaved: () => void;
 	} = $props();
 	function initialQuantity() {
-		return item && product?.packSize
+		return !editOnly && item && product?.packSize
 			? Math.max(1, Math.ceil(item.quantity / product.packSize))
 			: (item?.quantity ?? 1);
 	}
@@ -26,11 +32,16 @@
 		return initialExisting ?? product?.quantity ?? 0;
 	}
 	let quantity = $state(initialQuantity());
+	function initialNote() {
+		return item?.note ?? '';
+	}
+	let note = $state(initialNote());
+	let quantitative = $derived(product && product.trackingMode !== 'STATUS');
 	function initialPackSize() {
 		return product?.packSize ?? 1;
 	}
 	function initiallyUsesPacks() {
-		return !!item && !!product?.packSize;
+		return !editOnly && !!item && !!product?.packSize;
 	}
 	let packSize = $state(initialPackSize());
 	let usePacks = $state(initiallyUsesPacks());
@@ -38,7 +49,7 @@
 	let existing = $state(initialStock());
 	let discount = $state(false);
 	let error = $state('');
-	let purchase = $derived(!!item);
+	let purchase = $derived(!!item && !editOnly);
 	let current = $derived(
 		!purchase || product?.quantityNeedsReview ? existing : (product?.quantity ?? 0)
 	);
@@ -47,21 +58,24 @@
 		validQuantity(quantity, 1) &&
 			validQuantity(bought, 1) &&
 			(!usePacks || validQuantity(packSize, 1)) &&
-			(!product || (validQuantity(current) && (!purchase || validQuantity(total))))
+			(!quantitative || (validQuantity(current) && (!purchase || validQuantity(total))))
 	);
 	function confirm() {
 		if (!valid) return;
-		const saved = item
-			? purchaseShoppingItem(
-					item.id,
-					quantity,
-					discount && current > 0,
-					product?.quantityNeedsReview ? existing : undefined,
-					usePacks ? packSize : undefined
-				)
-			: product
-				? addProductToShopping(product.id, quantity, existing)
-				: false;
+		const saved =
+			item && editOnly
+				? updateShoppingReminder(item.id, quantity, note)
+				: item
+					? purchaseShoppingItem(
+							item.id,
+							quantity,
+							!!quantitative && discount && current > 0,
+							quantitative && product?.quantityNeedsReview ? existing : undefined,
+							usePacks ? packSize : undefined
+						)
+					: product
+						? addProductToShopping(product.id, quantity, quantitative ? existing : undefined, note)
+						: false;
 		if (saved) onSaved();
 		else
 			error = 'No se ha podido guardar. Revisa las cantidades y si el producto ya está en Compra.';
@@ -69,7 +83,7 @@
 </script>
 
 <ActionSheet
-	title={`${purchase ? 'Comprar' : 'Añadir'} ${product?.name ?? item?.name ?? ''}`}
+	title={`${editOnly ? 'Editar' : purchase ? 'Comprar' : 'Añadir'} ${product?.name ?? item?.name ?? ''}`}
 	{onClose}
 >
 	<form
@@ -83,11 +97,13 @@
 				? 'Número de packs'
 				: purchase
 					? 'Cantidad comprada'
-					: 'Cantidad a comprar (unidades)'}
+					: quantitative
+						? 'Cantidad a comprar (unidades)'
+						: 'Cantidad a comprar'}
 			bind:value={quantity}
 			min={1}
 		/>
-		{#if purchase && product?.packSize}
+		{#if purchase && quantitative && product?.packSize}
 			{#if usePacks}
 				<QuantityInput label="Unidades por pack" bind:value={packSize} min={1} />
 			{/if}
@@ -107,13 +123,13 @@
 					></span
 				></label
 			>
-		{:else if product?.packSize}
+		{:else if quantitative && product?.packSize}
 			<p>
 				Indica el total de unidades que necesitas. Al comprar podrás indicar cuántos packs llevas y
 				su tamaño.
 			</p>
 		{/if}
-		{#if product && (!purchase || product.quantityNeedsReview)}
+		{#if quantitative && product && !editOnly && (!purchase || product.quantityNeedsReview)}
 			{#if product.quantityNeedsReview}<p class="notice">
 					El recuento anterior no se conocía. Revisa cuánto queda en casa antes de continuar.
 				</p>{/if}
@@ -123,7 +139,7 @@
 					la compra.
 				</p>{/if}
 		{/if}
-		{#if purchase && product}
+		{#if purchase && quantitative && product}
 			{#if current > 0}
 				<label class="discount"
 					><input type="checkbox" bind:checked={discount} /><span
@@ -141,14 +157,39 @@
 				>
 			</p>
 		{/if}
+
+		{#if !purchase}
+			<label class="note"
+				>Nota opcional<input
+					type="text"
+					bind:value={note}
+					placeholder="Ej. packs de 12, botella grande"
+				/></label
+			>
+		{/if}
 		{#if error}<p class="notice" role="alert">{error}</p>{/if}
 		<button class="primary" type="submit" disabled={!valid}
-			>{purchase ? 'Confirmar compra' : 'Añadir a Compra'}</button
+			>{editOnly ? 'Guardar' : purchase ? 'Confirmar compra' : 'Añadir a Compra'}</button
 		>
 	</form>
 </ActionSheet>
 
 <style>
+	.note {
+		display: grid;
+		gap: 0.5rem;
+		margin: 1rem 0;
+		font-size: 0.875rem;
+	}
+	.note input {
+		min-height: 2.75rem;
+		padding: 0.6rem;
+		border: 1px solid var(--line);
+		border-radius: 0.75rem;
+		background: var(--surface-soft);
+		color: var(--ink);
+		font: inherit;
+	}
 	p {
 		color: var(--muted);
 		font-size: 0.85rem;

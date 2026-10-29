@@ -194,3 +194,58 @@ describe('Persistencia y migración de cantidades', () => {
 		});
 	});
 });
+
+describe('Persistencia de modos de inventario', () => {
+	it('los datos anteriores mantienen recuentos y packs en modo cantidad', () => {
+		const legacy = createPrototypeSeed();
+		legacy.inventory[0].packSize = 6;
+		vi.stubGlobal('window', {
+			localStorage: {
+				getItem: () =>
+					JSON.stringify(legacy, (key, value) => (key === 'trackingMode' ? undefined : value))
+			}
+		});
+		expect(loadPrototypeState().inventory[0]).toMatchObject({
+			trackingMode: 'QUANTITY',
+			quantity: 1,
+			status: 'LOW',
+			packSize: 6
+		});
+	});
+	it('recargar conserva el estado elegido y el estado previo para deshacer compras', () => {
+		let stored: string | null = null;
+		vi.stubGlobal('window', {
+			localStorage: {
+				getItem: () => stored,
+				setItem: (_key: string, value: string) => {
+					stored = value;
+				}
+			}
+		});
+		resetPrototype();
+		const state = getPrototypeState();
+		Object.assign(state.inventory[0], {
+			trackingMode: 'STATUS',
+			status: 'LOW',
+			quantity: 0,
+			packSize: null
+		});
+		const item = state.shopping.find((candidate) => candidate.productId === '1')!;
+		item.note = 'packs de 12';
+		purchaseShoppingItem(item.id, 2);
+		const restored = loadPrototypeState();
+		expect(restored.inventory[0]).toMatchObject({
+			trackingMode: 'STATUS',
+			status: 'AVAILABLE',
+			quantityNeedsReview: false
+		});
+		expect(restored.shopping.find((candidate) => candidate.id === item.id)).toMatchObject({
+			previousInventoryStatus: 'LOW',
+			quantity: 2,
+			note: 'packs de 12'
+		});
+		Object.assign(state, restored);
+		expect(undoShoppingPurchase(item.id)).toBe(true);
+		expect(loadPrototypeState().inventory[0].status).toBe('LOW');
+	});
+});

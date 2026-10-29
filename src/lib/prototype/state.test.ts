@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
 	changeInventoryQuantity,
+	changeInventoryStatus,
+	updateShoppingReminder,
 	removePendingShoppingItem,
 	getShoppingSuggestions,
 	deleteProduct,
@@ -727,5 +729,140 @@ describe('Compra en packs', () => {
 		const item = getPrototypeState().shopping.find((item) => item.productId === id)!;
 		expect(purchaseShoppingItem(item.id, 15)).toBe(true);
 		expect(getPrototypeState().inventory.find((p) => p.id === id)?.quantity).toBe(17);
+	});
+});
+
+describe('Gestión por estado y convivencia con cantidades', () => {
+	beforeEach(() => resetPrototype());
+	function statusProduct(
+		mode: 'MANUAL' | 'AUTOMATIC' = 'MANUAL',
+		status: 'AVAILABLE' | 'LOW' | 'OUT' = 'AVAILABLE'
+	) {
+		const id = createProduct('Jabón por estado', 0, null, null, mode, 1, null, 'STATUS', status)!;
+		return getPrototypeState().inventory.find((product) => product.id === id)!;
+	}
+	const linkedTo = (id: string) =>
+		getPrototypeState().shopping.filter((item) => item.productId === id);
+	it('repone por estado, sin calcularlo con la cantidad ni duplicar pendientes', () => {
+		const product = statusProduct('AUTOMATIC');
+		expect(linkedTo(product.id)).toHaveLength(0);
+		expect(changeInventoryQuantity(product.id, 10)).toBe(false);
+		expect(changeInventoryStatus('1', 'OUT')).toBe(false);
+		expect(changeInventoryStatus(product.id, 'LOW')).toBe(true);
+		expect(linkedTo(product.id)).toHaveLength(1);
+		changeInventoryStatus(product.id, 'OUT');
+		expect(linkedTo(product.id)).toHaveLength(1);
+		expect(getShoppingSuggestions().some((item) => item.id === product.id)).toBe(false);
+		changeInventoryStatus(product.id, 'AVAILABLE');
+		expect(linkedTo(product.id)).toHaveLength(0);
+	});
+	it('sugiere Poco y No hay en manual, y conserva una compra manual al volver a Hay', () => {
+		const product = statusProduct();
+		expect(getShoppingSuggestions().some((item) => item.id === product.id)).toBe(false);
+		changeInventoryStatus(product.id, 'LOW');
+		expect(getShoppingSuggestions().some((item) => item.id === product.id)).toBe(true);
+		expect(linkedTo(product.id)).toHaveLength(0);
+		addProductToShopping(product.id, 2, undefined, 'packs de 12');
+		changeInventoryStatus(product.id, 'AVAILABLE');
+		expect(linkedTo(product.id)[0]).toMatchObject({
+			quantity: 2,
+			note: 'packs de 12',
+			source: 'MANUAL'
+		});
+	});
+	it.each(['LOW', 'OUT', 'AVAILABLE'] as const)(
+		'comprar desde %s pasa a Hay y deshacer restaura el estado',
+		(status) => {
+			const product = statusProduct('MANUAL', status);
+			addProductToShopping(product.id, 3);
+			const item = linkedTo(product.id)[0];
+			expect(purchaseShoppingItem(item.id)).toBe(true);
+			expect(product.status).toBe('AVAILABLE');
+			expect(product.quantity).toBe(0);
+			expect(item.quantity).toBe(3);
+			expect(undoShoppingPurchase(item.id)).toBe(true);
+			expect(product.status).toBe(status);
+		}
+	);
+	it('deshacer conserva una corrección de estado posterior, incluso si vuelve a Hay', () => {
+		const product = statusProduct('MANUAL', 'OUT');
+		addProductToShopping(product.id);
+		const item = linkedTo(product.id)[0];
+		purchaseShoppingItem(item.id);
+		changeInventoryStatus(product.id, 'LOW');
+		changeInventoryStatus(product.id, 'AVAILABLE');
+		expect(undoShoppingPurchase(item.id)).toBe(true);
+		expect(product.status).toBe('AVAILABLE');
+	});
+	it('editar el producto también conserva una corrección posterior al deshacer', () => {
+		const product = statusProduct('MANUAL', 'OUT');
+		addProductToShopping(product.id);
+		const item = linkedTo(product.id)[0];
+		purchaseShoppingItem(item.id);
+		updateProduct(product.id, product.name, 0, null, null, 'MANUAL', 1, null, 'STATUS', 'LOW');
+		expect(undoShoppingPurchase(item.id)).toBe(true);
+		expect(product.status).toBe('LOW');
+	});
+	it('la cantidad y nota de compra no cambian inventario ni permiten duplicados', () => {
+		const product = statusProduct('AUTOMATIC', 'LOW');
+		const item = linkedTo(product.id)[0];
+		expect(updateShoppingReminder(item.id, 2, '  packs de 12  ')).toBe(true);
+		expect(item).toMatchObject({ quantity: 2, note: 'packs de 12' });
+		expect(product.status).toBe('LOW');
+		expect(updateShoppingReminder(item.id, 0, '')).toBe(false);
+		expect(addProductToShopping(product.id)).toBe(false);
+		purchaseShoppingItem(item.id);
+		expect(updateShoppingReminder(item.id, 4, '')).toBe(false);
+		expect(finalizeShopping()).toBe(1);
+		expect(linkedTo(product.id)).toHaveLength(0);
+	});
+	it('rechaza regularización numérica y conversiones de packs en productos por estado', () => {
+		const product = statusProduct('MANUAL', 'OUT');
+		addProductToShopping(product.id);
+		const item = linkedTo(product.id)[0];
+		expect(purchaseShoppingItem(item.id, 2, true)).toBe(false);
+		expect(purchaseShoppingItem(item.id, 2, false, 1)).toBe(false);
+		expect(purchaseShoppingItem(item.id, 2, false, undefined, 6)).toBe(false);
+		expect(item.status).toBe('PENDING');
+		expect(product.status).toBe('OUT');
+	});
+	it('cambia de modo con recuento explícito y bloquea cambios con compras sin finalizar', () => {
+		const product = statusProduct('AUTOMATIC', 'LOW');
+		expect(
+			updateProduct(product.id, product.name, 8, null, null, 'AUTOMATIC', 2, 6, 'QUANTITY')
+		).toBe(true);
+		expect(product).toMatchObject({
+			trackingMode: 'QUANTITY',
+			quantity: 8,
+			status: 'AVAILABLE',
+			packSize: 6
+		});
+		expect(linkedTo(product.id)).toHaveLength(0);
+		addProductToShopping(product.id, 6);
+		const item = linkedTo(product.id)[0];
+		purchaseShoppingItem(item.id);
+		expect(
+			updateProduct(product.id, product.name, 0, null, null, 'AUTOMATIC', 1, null, 'STATUS', 'LOW')
+		).toBe(false);
+		expect(product.trackingMode).toBe('QUANTITY');
+		undoShoppingPurchase(item.id);
+		expect(
+			updateProduct(product.id, product.name, 0, null, null, 'AUTOMATIC', 1, 6, 'STATUS', 'LOW')
+		).toBe(true);
+		expect(product).toMatchObject({
+			trackingMode: 'STATUS',
+			status: 'LOW',
+			packSize: null,
+			quantityNeedsReview: false
+		});
+		expect(linkedTo(product.id)).toHaveLength(1);
+	});
+	it('guardar desde Compra permite elegir estado sin exigir existencias', () => {
+		const id = saveShoppingItemAsProduct('Café por estado', 2, 0, 'STATUS', 'molido', 'LOW')!;
+		expect(getPrototypeState().inventory.find((product) => product.id === id)).toMatchObject({
+			trackingMode: 'STATUS',
+			status: 'LOW'
+		});
+		expect(linkedTo(id)[0]).toMatchObject({ quantity: 2, note: 'molido' });
 	});
 });

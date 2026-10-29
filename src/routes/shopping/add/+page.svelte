@@ -1,4 +1,6 @@
 <script lang="ts">
+	import StatusInput from '$lib/components/StatusInput.svelte';
+	import type { InventoryStatus } from '$lib/prototype/types';
 	import QuantityInput from '$lib/components/QuantityInput.svelte';
 	import { validQuantity } from '$lib/prototype/quantities';
 	import { goto } from '$app/navigation';
@@ -28,6 +30,8 @@
 
 	let query = $state('');
 	let quantity = $state(1);
+	let note = $state('');
+	let status = $state<InventoryStatus>('OUT');
 	let existingQuantity = $state(0);
 	let selectedProductId = $state<string | null>(null);
 	let error = $state<string | null>(null);
@@ -87,7 +91,12 @@
 			return;
 		}
 
-		const added = addProductToShopping(selectedProduct.id, quantity, existingQuantity);
+		const added = addProductToShopping(
+			selectedProduct.id,
+			quantity,
+			selectedProduct.trackingMode === 'STATUS' ? undefined : existingQuantity,
+			note
+		);
 
 		if (!added) {
 			error = `${selectedProduct.name} ya está en Compra.`;
@@ -104,7 +113,7 @@
 			return;
 		}
 
-		const added = addOneOffShoppingItem(name, quantity);
+		const added = addOneOffShoppingItem(name, quantity, note);
 
 		if (!added) {
 			error = 'No se ha podido añadir el artículo.';
@@ -126,7 +135,7 @@
 			return;
 		}
 
-		const productId = saveShoppingItemAsProduct(name, quantity, existingQuantity);
+		const productId = saveShoppingItemAsProduct(name, quantity, 0, 'STATUS', note, status);
 
 		if (!productId) {
 			error = 'No se ha podido guardar el producto.';
@@ -168,6 +177,9 @@
 
 	{#if normalizedQuery.length > 0}
 		<QuantityInput label="Cantidad a comprar" bind:value={quantity} min={1} />
+		<label class="note"
+			>Nota opcional<input type="text" bind:value={note} placeholder="Ej. packs de 12" /></label
+		>
 	{/if}
 
 	{#if error}
@@ -195,11 +207,15 @@
 				<span class="selected-mark" aria-hidden="true">✓</span>
 			</div>
 
-			{#if selectedProduct.quantityNeedsReview}<p class="hint">
-					Revisa el recuento: la cantidad anterior era provisional.
-				</p>{/if}
-			<QuantityInput label="Quedan en casa" bind:value={existingQuantity} />
-			<p class="hint">Se guardará esta cantidad. La compra se sumará al marcarla como comprada.</p>
+			{#if selectedProduct.trackingMode !== 'STATUS'}
+				{#if selectedProduct.quantityNeedsReview}<p class="hint">
+						Revisa el recuento: la cantidad anterior era provisional.
+					</p>{/if}
+				<QuantityInput label="Quedan en casa" bind:value={existingQuantity} />
+				<p class="hint">
+					Se guardará esta cantidad. La compra se sumará al marcarla como comprada.
+				</p>
+			{/if}
 
 			{#if selectedProductAlreadyInShopping}
 				<p class="already-added">Este producto ya está en Compra.</p>
@@ -259,10 +275,7 @@
 				<span class="chevron" aria-hidden="true">›</span>
 			</button>
 
-			<QuantityInput
-				label="Quedan en casa si lo guardas como producto"
-				bind:value={existingQuantity}
-			/>
+			<StatusInput bind:value={status} />
 
 			<button
 				class="option"
@@ -280,7 +293,7 @@
 					<span>
 						{existingProductWithExactName
 							? 'Selecciona el producto existente para añadirlo.'
-							: `Se guardará con ${existingQuantity ?? '—'} en casa; lo comprado se sumará al confirmar.`}
+							: 'Se gestionará por estado. Puedes cambiarlo a cantidad al editar el producto.'}
 					</span>
 				</div>
 
@@ -295,6 +308,21 @@
 </section>
 
 <style>
+	.note {
+		display: grid;
+		gap: 0.5rem;
+		margin: 1rem 0;
+		font-size: 0.875rem;
+	}
+	.note input {
+		min-height: 2.75rem;
+		padding: 0.6rem;
+		border: 1px solid var(--line);
+		border-radius: 0.75rem;
+		background: var(--surface-soft);
+		color: var(--ink);
+		font: inherit;
+	}
 	.page-header {
 		display: grid;
 		grid-template-columns: 2.75rem 1fr 2.75rem;

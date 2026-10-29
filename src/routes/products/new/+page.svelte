@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { TrackingMode, InventoryStatus } from '$lib/prototype/types';
 	import { createFeedback } from '$lib/prototype/feedback.svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -21,6 +22,8 @@
 
 	function saveProduct(
 		value: {
+			trackingMode: TrackingMode;
+			status: InventoryStatus;
 			name: string;
 			quantity: number;
 			lowThreshold: number;
@@ -38,7 +41,9 @@
 			value.locationId || null,
 			value.replenishmentMode,
 			value.lowThreshold,
-			value.packSize
+			value.packSize,
+			value.trackingMode,
+			value.status
 		);
 
 		if (productId) {
@@ -50,7 +55,10 @@
 			}
 			return true;
 		} else {
-			feedback.show('Ya existe un producto con ese nombre.', true);
+			feedback.show(
+				'No se ha podido guardar. Revisa el nombre y finaliza o deshaz la compra antes de cambiar el modo.',
+				true
+			);
 			return false;
 		}
 	}

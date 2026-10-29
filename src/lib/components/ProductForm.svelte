@@ -1,11 +1,14 @@
 <script lang="ts">
+	import StatusInput from './StatusInput.svelte';
 	import { tick } from 'svelte';
 	import { getActiveCategories, getActiveLocations } from '$lib/prototype/state.svelte';
 	import QuantityInput from './QuantityInput.svelte';
 	import { validQuantity, statusLabel } from '$lib/prototype/quantities';
-	import type { ReplenishmentMode } from '$lib/prototype/types';
+	import type { ReplenishmentMode, TrackingMode, InventoryStatus } from '$lib/prototype/types';
 
 	interface ProductFormValue {
+		trackingMode: TrackingMode;
+		status: InventoryStatus;
 		name: string;
 		quantity: number;
 		lowThreshold: number;
@@ -19,6 +22,7 @@
 		initialValue?: Partial<ProductFormValue>;
 		submitLabel?: string;
 		allowAddAnother?: boolean;
+		modeChangeLocked?: boolean;
 		onsubmit: (value: ProductFormValue, addAnother: boolean) => boolean | void;
 	}
 
@@ -26,6 +30,7 @@
 		initialValue = {},
 		submitLabel = 'Guardar producto',
 		allowAddAnother = false,
+		modeChangeLocked = false,
 		onsubmit
 	}: Props = $props();
 
@@ -36,6 +41,8 @@
 	let name = $state(getInitialValue().name ?? '');
 	let nameInput = $state<HTMLInputElement>();
 	let saving = $state(false);
+	let trackingMode = $state<TrackingMode>(getInitialValue().trackingMode ?? 'STATUS');
+	let status = $state<InventoryStatus>(getInitialValue().status ?? 'AVAILABLE');
 	let quantity = $state(getInitialValue().quantity ?? 1);
 	let lowThreshold = $state(getInitialValue().lowThreshold ?? 1);
 	let usesPacks = $state(!!getInitialValue().packSize);
@@ -49,9 +56,10 @@
 	let canSave = $derived(
 		name.trim().length > 0 &&
 			!saving &&
-			validQuantity(quantity) &&
-			validQuantity(lowThreshold) &&
-			(!usesPacks || validQuantity(packSize, 1))
+			(trackingMode === 'STATUS' ||
+				(validQuantity(quantity) &&
+					validQuantity(lowThreshold) &&
+					(!usesPacks || validQuantity(packSize, 1))))
 	);
 
 	async function submit(addAnother = false) {
@@ -62,9 +70,11 @@
 		const saved = onsubmit(
 			{
 				name: name.trim(),
-				quantity,
-				lowThreshold,
-				packSize: usesPacks ? packSize : null,
+				trackingMode,
+				status,
+				quantity: trackingMode === 'STATUS' ? 0 : quantity,
+				lowThreshold: trackingMode === 'STATUS' ? 1 : lowThreshold,
+				packSize: trackingMode === 'QUANTITY' && usesPacks ? packSize : null,
 				categoryId,
 				locationId,
 				replenishmentMode
@@ -79,6 +89,7 @@
 		}
 
 		name = '';
+		status = 'AVAILABLE';
 		usesPacks = !!getInitialValue().packSize;
 		packSize = getInitialValue().packSize ?? 6;
 		quantity = getInitialValue().quantity ?? 1;
@@ -108,38 +119,58 @@
 		/>
 	</label>
 
-	<div>
-		<QuantityInput label="Cantidad en casa" bind:value={quantity} />
-		<p class="quantity-status" aria-live="polite">
-			Estado: {validQuantity(quantity) && validQuantity(lowThreshold)
-				? statusLabel(quantity, lowThreshold)
-				: 'Revisa la cantidad'}
-		</p>
-		<QuantityInput label="Reponer cuando queden" bind:value={lowThreshold} />
+	<label class="field"
+		><span>Gestionar inventario</span><select bind:value={trackingMode} disabled={modeChangeLocked}
+			><option value="STATUS">Por estado</option><option value="QUANTITY">Por cantidad</option
+			></select
+		></label
+	>
+	{#if modeChangeLocked}<p class="quantity-status">
+			Finaliza o deshaz la compra de este producto antes de cambiar su forma de gestión.
+		</p>{/if}
+	{#if trackingMode === 'STATUS'}
+		<StatusInput bind:value={status} />
 		<p class="quantity-status">
-			Con 0: No hay. De 1 hasta este límite: Poco. Por encima: Hay. Al llegar al límite se sugerirá
-			o se añadirá a Compra según la reposición elegida.
+			Indica si hay, queda poco o no hay. No necesitas llevar un recuento.
+			{#if getInitialValue().trackingMode === 'QUANTITY'}Al guardar se dejará de llevar la cantidad
+				y se quitará la configuración de packs.{/if}
 		</p>
-	</div>
-
-	<div>
-		<label class="radio-option">
-			<input type="checkbox" bind:checked={usesPacks} />
-			<span
-				><strong>Se compra en packs</strong><small
-					>Cuenta el contenido en casa: por ejemplo, rollos de papel, no paquetes.</small
-				></span
-			>
-		</label>
-		{#if usesPacks}
-			<QuantityInput label="Unidades por pack habitual" bind:value={packSize} min={1} />
-			<p class="quantity-status">
-				Podrás cambiar el tamaño del pack en cada compra. La cantidad en casa y el límite de
-				reposición siempre cuentan unidades.
+	{:else}
+		<div>
+			<QuantityInput label="Cantidad en casa" bind:value={quantity} />
+			{#if getInitialValue().trackingMode === 'STATUS'}<p class="quantity-status">
+					Introduce cuánto queda realmente. El estado se calculará con esta cantidad.
+				</p>{/if}
+			<p class="quantity-status" aria-live="polite">
+				Estado: {validQuantity(quantity) && validQuantity(lowThreshold)
+					? statusLabel(quantity, lowThreshold)
+					: 'Revisa la cantidad'}
 			</p>
-		{/if}
-	</div>
+			<QuantityInput label="Reponer cuando queden" bind:value={lowThreshold} />
+			<p class="quantity-status">
+				Con 0: No hay. De 1 hasta este límite: Poco. Por encima: Hay. Al llegar al límite se
+				sugerirá o se añadirá a Compra según la reposición elegida.
+			</p>
+		</div>
 
+		<div>
+			<label class="radio-option">
+				<input type="checkbox" bind:checked={usesPacks} />
+				<span
+					><strong>Se compra en packs</strong><small
+						>Cuenta el contenido en casa: por ejemplo, rollos de papel, no paquetes.</small
+					></span
+				>
+			</label>
+			{#if usesPacks}
+				<QuantityInput label="Unidades por pack habitual" bind:value={packSize} min={1} />
+				<p class="quantity-status">
+					Podrás cambiar el tamaño del pack en cada compra. La cantidad en casa y el límite de
+					reposición siempre cuentan unidades.
+				</p>
+			{/if}
+		</div>
+	{/if}
 	<label class="field">
 		<span>Categoría</span>
 
@@ -172,7 +203,11 @@
 
 			<span>
 				<strong>Manual</strong>
-				<small>Aparecerá en Sugerencias al llegar al límite de reposición.</small>
+				<small
+					>{trackingMode === 'STATUS'
+						? 'Aparecerá en Sugerencias cuando marques Poco o No hay.'
+						: 'Aparecerá en Sugerencias al llegar al límite de reposición.'}</small
+				>
 			</span>
 		</label>
 
@@ -181,7 +216,11 @@
 
 			<span>
 				<strong>Automática</strong>
-				<small>Se añadirá a Compra al llegar al límite de reposición.</small>
+				<small
+					>{trackingMode === 'STATUS'
+						? 'Se añadirá a Compra cuando marques Poco o No hay.'
+						: 'Se añadirá a Compra al llegar al límite de reposición.'}</small
+				>
 			</span>
 		</label>
 	</fieldset>

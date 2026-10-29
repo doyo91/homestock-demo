@@ -30,14 +30,23 @@ export function loadPrototypeState(): PrototypeState {
 			const known = validQuantity(product.quantity);
 			const quantity = known ? product.quantity : product.status === 'OUT' ? 0 : 1;
 			const lowThreshold = validQuantity(product.lowThreshold) ? product.lowThreshold : 1;
+			const trackingMode =
+				product.trackingMode === 'STATUS' ? ('STATUS' as const) : ('QUANTITY' as const);
 			const migrated = {
 				...product,
 				active: product.active ?? true,
-				quantity,
+				trackingMode,
+				quantity: trackingMode === 'STATUS' ? 0 : quantity,
 				lowThreshold,
-				packSize: validQuantity(product.packSize, 1) ? product.packSize : null,
-				quantityNeedsReview: known ? !!product.quantityNeedsReview : product.status !== 'OUT',
-				status: inventoryStatus(quantity, lowThreshold)
+				packSize:
+					trackingMode !== 'STATUS' && validQuantity(product.packSize, 1) ? product.packSize : null,
+				quantityNeedsReview:
+					trackingMode === 'STATUS'
+						? false
+						: known
+							? !!product.quantityNeedsReview
+							: product.status !== 'OUT',
+				status: trackingMode === 'STATUS' ? product.status : inventoryStatus(quantity, lowThreshold)
 			};
 			Reflect.deleteProperty(migrated, 'autoThreshold');
 			return migrated;

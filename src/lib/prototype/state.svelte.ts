@@ -1,3 +1,4 @@
+import type { InventoryStatus, TrackingMode } from './types';
 import { inventoryStatus, validQuantity } from './quantities';
 import type { PrototypeInventoryItem } from './seed';
 import { CATEGORY_PALETTE, type CategoryColor } from './seed';
@@ -13,7 +14,7 @@ export function getShoppingSuggestions() {
 	return state.inventory.filter(
 		(product) =>
 			product.active &&
-			product.quantity <= product.lowThreshold &&
+			needsReplenishment(product) &&
 			!state.shopping.some((item) => item.productId === product.id)
 	);
 }
@@ -66,10 +67,45 @@ function shoppingEntry(product: PrototypeInventoryItem, source: 'AUTO' | 'MANUAL
 	};
 }
 
+export function needsReplenishment(product: PrototypeInventoryItem): boolean {
+	return product.trackingMode === 'STATUS'
+		? product.status !== 'AVAILABLE'
+		: product.quantity <= product.lowThreshold;
+}
+
+export function changeInventoryStatus(productId: string, status: InventoryStatus): boolean {
+	const product = getProductById(productId);
+	if (
+		!product?.active ||
+		product.trackingMode !== 'STATUS' ||
+		!['AVAILABLE', 'LOW', 'OUT'].includes(status)
+	)
+		return false;
+	const changed = product.status !== status;
+	product.status = status;
+	// Preserve a later explicit inventory edit when undoing an earlier purchase.
+	for (const item of state.shopping)
+		if (item.productId === productId && item.status === 'PURCHASED')
+			item.previousInventoryStatus = null;
+	if (changed) syncAutomaticShopping(product);
+	persistPrototypeState();
+	return true;
+}
+
+export function updateShoppingReminder(id: string, quantity: number, note: string): boolean {
+	const item = state.shopping.find(
+		(candidate) => candidate.id === id && candidate.status === 'PENDING'
+	);
+	if (!item || !validQuantity(quantity, 1)) return false;
+	item.quantity = quantity;
+	item.note = note.trim();
+	persistPrototypeState();
+	return true;
+}
+
 function syncAutomaticShopping(product: PrototypeInventoryItem): void {
 	if (!product.active || product.quantityNeedsReview) return;
-	const shouldReplenish =
-		product.replenishmentMode === 'AUTOMATIC' && product.quantity <= product.lowThreshold;
+	const shouldReplenish = product.replenishmentMode === 'AUTOMATIC' && needsReplenishment(product);
 	if (shouldReplenish) {
 		if (!state.shopping.some((item) => item.productId === product.id)) {
 			state.shopping.push(shoppingEntry(product, 'AUTO'));
@@ -84,7 +120,8 @@ function syncAutomaticShopping(product: PrototypeInventoryItem): void {
 
 export function changeInventoryQuantity(productId: string, quantity: number): boolean {
 	const product = getProductById(productId);
-	if (!product?.active || !validQuantity(quantity)) return false;
+	if (!product?.active || product.trackingMode === 'STATUS' || !validQuantity(quantity))
+		return false;
 	const changed = quantity !== product.quantity || product.quantityNeedsReview;
 	product.quantity = quantity;
 	product.quantityNeedsReview = false;
@@ -97,7 +134,8 @@ export function changeInventoryQuantity(productId: string, quantity: number): bo
 export function addProductToShopping(
 	productId: string,
 	quantity = 1,
-	existingQuantity?: number
+	existingQuantity?: number,
+	note = ''
 ): boolean {
 	const product = getProductById(productId);
 	if (
@@ -107,18 +145,18 @@ export function addProductToShopping(
 		state.shopping.some((item) => item.productId === productId)
 	)
 		return false;
-	if (existingQuantity !== undefined) {
+	if (existingQuantity !== undefined && product.trackingMode !== 'STATUS') {
 		product.quantity = existingQuantity;
 		product.quantityNeedsReview = false;
 		product.status = inventoryStatus(existingQuantity, product.lowThreshold);
 	}
 	// Insert atomically with the stock correction: no second automatic entry.
-	state.shopping.push(shoppingEntry(product, 'MANUAL', quantity));
+	state.shopping.push({ ...shoppingEntry(product, 'MANUAL', quantity), note: note.trim() });
 	persistPrototypeState();
 	return true;
 }
 
-export function addOneOffShoppingItem(name: string, quantity = 1): boolean {
+export function addOneOffShoppingItem(name: string, quantity = 1, note = ''): boolean {
 	const trimmedName = name.trim();
 	if (!trimmedName || !validQuantity(quantity, 1)) return false;
 	state.shopping.push({
@@ -127,6 +165,7 @@ export function addOneOffShoppingItem(name: string, quantity = 1): boolean {
 		status: 'PENDING',
 		source: 'MANUAL',
 		productId: null,
+		note: note.trim(),
 		quantity,
 		purchaseDelta: null
 	});
@@ -137,11 +176,16 @@ export function addOneOffShoppingItem(name: string, quantity = 1): boolean {
 export function saveShoppingItemAsProduct(
 	name: string,
 	quantity = 1,
-	existingQuantity = 0
+	existingQuantity = 0,
+	trackingMode: TrackingMode = 'QUANTITY',
+	note = '',
+	status: InventoryStatus = 'OUT'
 ): string | null {
 	const trimmedName = name.trim();
 	if (
 		!trimmedName ||
+		!['STATUS', 'QUANTITY'].includes(trackingMode) ||
+		!['AVAILABLE', 'LOW', 'OUT'].includes(status) ||
 		!validQuantity(quantity, 1) ||
 		!validQuantity(existingQuantity) ||
 		state.inventory.some(
@@ -155,15 +199,16 @@ export function saveShoppingItemAsProduct(
 		name: trimmedName,
 		categoryId: null,
 		locationId: null,
-		quantity: existingQuantity,
+		trackingMode,
+		quantity: trackingMode === 'STATUS' ? 0 : existingQuantity,
 		lowThreshold: 1,
 		quantityNeedsReview: false,
-		status: inventoryStatus(existingQuantity, 1),
+		status: trackingMode === 'STATUS' ? status : inventoryStatus(existingQuantity, 1),
 		active: true,
 		replenishmentMode: 'MANUAL'
 	};
 	state.inventory.push(product);
-	state.shopping.push(shoppingEntry(product, 'MANUAL', quantity));
+	state.shopping.push({ ...shoppingEntry(product, 'MANUAL', quantity), note: note.trim() });
 	persistPrototypeState();
 	return productId;
 }
@@ -191,15 +236,23 @@ export function purchaseShoppingItem(
 			(product.quantityNeedsReview && existingQuantity === undefined)
 		)
 			return false;
-		const current = existingQuantity ?? product.quantity;
-		if (discountExisting && current === 0) return false;
-		delta = bought - (discountExisting ? 1 : 0);
-		const total = current + delta;
-		if (!validQuantity(total)) return false;
-		product.quantity = total;
-		product.quantityNeedsReview = false;
-		product.status = inventoryStatus(total, product.lowThreshold);
-		// Buying does not enqueue another purchase, even when the total remains low.
+		if (product.trackingMode === 'STATUS') {
+			if (packSize !== undefined || discountExisting || existingQuantity !== undefined)
+				return false;
+			item.previousInventoryStatus = product.status;
+			product.status = 'AVAILABLE';
+			delta = 0;
+		} else {
+			const current = existingQuantity ?? product.quantity;
+			if (discountExisting && current === 0) return false;
+			delta = bought - (discountExisting ? 1 : 0);
+			const total = current + delta;
+			if (!validQuantity(total)) return false;
+			product.quantity = total;
+			product.quantityNeedsReview = false;
+			product.status = inventoryStatus(total, product.lowThreshold);
+			// Buying does not enqueue another purchase, even when the total remains low.
+		}
 	} else if (discountExisting || existingQuantity !== undefined) return false;
 	item.quantity = bought;
 	item.purchaseDelta = delta;
@@ -215,7 +268,9 @@ export function undoShoppingPurchase(id: string): boolean {
 		const product = getProductById(item.productId);
 		if (!product?.active) return false;
 		// Reverse only this purchase's contribution, preserving later stock edits.
-		if (item.purchaseDelta !== null) {
+		if (product.trackingMode === 'STATUS') {
+			if (item.previousInventoryStatus) product.status = item.previousInventoryStatus;
+		} else if (item.purchaseDelta !== null) {
 			const total = product.quantity - item.purchaseDelta;
 			if (!validQuantity(total)) return false;
 			product.quantity = total;
@@ -225,6 +280,7 @@ export function undoShoppingPurchase(id: string): boolean {
 			product.quantityNeedsReview = true;
 		}
 	}
+	item.previousInventoryStatus = null;
 	item.status = 'PENDING';
 	item.purchaseDelta = null;
 	persistPrototypeState();
@@ -255,11 +311,15 @@ export function createProduct(
 	locationId: string | null,
 	replenishmentMode: 'MANUAL' | 'AUTOMATIC',
 	lowThreshold = 1,
-	packSize: number | null = null
+	packSize: number | null = null,
+	trackingMode: TrackingMode = 'QUANTITY',
+	status: InventoryStatus = 'AVAILABLE'
 ): string | null {
 	const trimmedName = name.trim();
 	if (
 		!trimmedName ||
+		!['STATUS', 'QUANTITY'].includes(trackingMode) ||
+		!['AVAILABLE', 'LOW', 'OUT'].includes(status) ||
 		!validQuantity(quantity) ||
 		!validQuantity(lowThreshold) ||
 		(packSize !== null && !validQuantity(packSize, 1)) ||
@@ -273,11 +333,12 @@ export function createProduct(
 		name: trimmedName,
 		categoryId: categoryId || null,
 		locationId: locationId || null,
-		quantity,
+		trackingMode,
+		quantity: trackingMode === 'STATUS' ? 0 : quantity,
 		lowThreshold,
-		packSize,
+		packSize: trackingMode === 'STATUS' ? null : packSize,
 		quantityNeedsReview: false,
-		status: inventoryStatus(quantity, lowThreshold),
+		status: trackingMode === 'STATUS' ? status : inventoryStatus(quantity, lowThreshold),
 		active: true,
 		replenishmentMode
 	};
@@ -295,13 +356,17 @@ export function updateProduct(
 	locationId: string | null,
 	replenishmentMode: 'MANUAL' | 'AUTOMATIC',
 	lowThreshold = 1,
-	packSize: number | null = null
+	packSize: number | null = null,
+	trackingMode: TrackingMode = 'QUANTITY',
+	status: InventoryStatus = 'AVAILABLE'
 ): boolean {
 	const product = getProductById(productId);
 	const trimmedName = name.trim();
 	if (
 		!product?.active ||
 		!trimmedName ||
+		!['STATUS', 'QUANTITY'].includes(trackingMode) ||
+		!['AVAILABLE', 'LOW', 'OUT'].includes(status) ||
 		!validQuantity(quantity) ||
 		!validQuantity(lowThreshold) ||
 		(packSize !== null && !validQuantity(packSize, 1)) ||
@@ -312,21 +377,35 @@ export function updateProduct(
 		)
 	)
 		return false;
+	const modeChanged = (product.trackingMode ?? 'QUANTITY') !== trackingMode;
+	if (
+		modeChanged &&
+		state.shopping.some((item) => item.productId === productId && item.status === 'PURCHASED')
+	)
+		return false;
 	const changed =
+		modeChanged ||
+		(trackingMode === 'STATUS' && product.status !== status) ||
 		product.quantity !== quantity ||
 		product.lowThreshold !== lowThreshold ||
 		product.replenishmentMode !== replenishmentMode ||
 		product.quantityNeedsReview;
+	if (trackingMode === 'STATUS' && product.status !== status) {
+		for (const item of state.shopping)
+			if (item.productId === productId && item.status === 'PURCHASED')
+				item.previousInventoryStatus = null;
+	}
 	Object.assign(product, {
 		name: trimmedName,
-		quantity,
+		trackingMode,
+		quantity: trackingMode === 'STATUS' ? 0 : quantity,
 		lowThreshold,
-		packSize,
+		packSize: trackingMode === 'STATUS' ? null : packSize,
 		categoryId: categoryId || null,
 		locationId: locationId || null,
 		replenishmentMode,
 		quantityNeedsReview: false,
-		status: inventoryStatus(quantity, lowThreshold)
+		status: trackingMode === 'STATUS' ? status : inventoryStatus(quantity, lowThreshold)
 	});
 	for (const item of state.shopping) if (item.productId === productId) item.name = trimmedName;
 	if (changed) syncAutomaticShopping(product);

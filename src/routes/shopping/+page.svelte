@@ -8,6 +8,7 @@
 		getShoppingSuggestions,
 		getLocationById,
 		removePendingShoppingItem,
+		purchaseShoppingItem,
 		undoShoppingPurchase
 	} from '$lib/prototype/state.svelte';
 
@@ -24,6 +25,11 @@
 	let shopping = $derived(prototypeState.shopping);
 
 	let showFinishConfirmation = $state(false);
+	let editId = $state<string | null>(null);
+	let editItem = $derived(shopping.find((item) => item.id === editId));
+	let editProduct = $derived(
+		prototypeState.inventory.find((product) => product.id === editItem?.productId)
+	);
 	let purchaseId = $state<string | null>(null);
 	let suggestionId = $state<string | null>(null);
 	let purchaseItem = $derived(shopping.find((item) => item.id === purchaseId));
@@ -42,7 +48,11 @@
 	let purchased = $derived(shopping.filter((item) => item.status === 'PURCHASED'));
 
 	function markAsPurchased(id: string) {
-		purchaseId = id;
+		const item = shopping.find((candidate) => candidate.id === id);
+		const product = prototypeState.inventory.find((candidate) => candidate.id === item?.productId);
+		if (product?.trackingMode === 'STATUS' || !item?.productId) {
+			if (!purchaseShoppingItem(id)) feedback.show('No se ha podido confirmar la compra.', true);
+		} else purchaseId = id;
 	}
 
 	function undoPurchase(id: string) {
@@ -171,9 +181,16 @@
 					<span class="item-name">
 						{item.name} · {item.quantity}
 						{item.quantity === 1 ? 'ud.' : 'uds.'}
+						{#if item.note}<small class="item-note">{item.note}</small>{/if}
 					</span>
 				</button>
 
+				<button
+					class="reminder-button"
+					type="button"
+					aria-label={`Editar cantidad y nota de ${item.name}`}
+					onclick={() => (editId = item.id)}>Editar</button
+				>
 				<button
 					class="delete-button"
 					type="button"
@@ -233,10 +250,11 @@
 							class:low={item.status === 'LOW'}
 							class:out={item.status === 'OUT'}
 						>
-							{item.quantity}
-							{item.quantity === 1 ? 'ud.' : 'uds.'} · {item.status === 'OUT'
-								? 'No hay'
-								: 'Poco'}{item.quantityNeedsReview ? ' · Revisar cantidad' : ''}
+							{#if item.trackingMode !== 'STATUS'}{item.quantity}
+								{item.quantity === 1 ? 'ud.' : 'uds.'} ·
+							{/if}{item.status === 'OUT' ? 'No hay' : 'Poco'}{item.quantityNeedsReview
+								? ' · Revisar cantidad'
+								: ''}
 						</span>
 					</div>
 
@@ -263,6 +281,7 @@
 						<span class="item-name">
 							{item.name} · {item.quantity}
 							{item.quantity === 1 ? 'ud.' : 'uds.'}
+							{#if item.note}<small class="item-note">{item.note}</small>{/if}
 						</span>
 					</div>
 
@@ -328,7 +347,31 @@
 	/>
 {/if}
 
+{#if editItem}
+	<ShoppingQuantityPanel
+		item={editItem}
+		product={editProduct}
+		editOnly
+		onClose={() => (editId = null)}
+		onSaved={() => (editId = null)}
+	/>
+{/if}
+
 <style>
+	.item-note {
+		display: block;
+		color: var(--muted);
+		margin-top: 0.25rem;
+		font-weight: normal;
+	}
+	.reminder-button {
+		border: 0;
+		background: transparent;
+		color: var(--accent);
+		min-height: 2.75rem;
+		cursor: pointer;
+	}
+
 	.page-header {
 		display: flex;
 		align-items: center;

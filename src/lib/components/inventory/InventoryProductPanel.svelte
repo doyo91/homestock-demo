@@ -1,4 +1,6 @@
 <script lang="ts">
+	import StatusInput from '../StatusInput.svelte';
+	import { changeInventoryStatus } from '$lib/prototype/state.svelte';
 	import { onMount, tick } from 'svelte';
 	import { resolve } from '$app/paths';
 	import type { PrototypeInventoryItem } from '$lib/prototype/seed';
@@ -34,6 +36,10 @@
 		return item.quantity;
 	}
 	let quantity = $state(initialQuantity());
+	function initialStatus() {
+		return item.status;
+	}
+	let status = $state(initialStatus());
 
 	onMount(() => {
 		const previousOverflow = document.body.style.overflow;
@@ -76,7 +82,11 @@
 		<div>
 			<h2 id="product-panel-title">{deleting ? `¿Eliminar ${item.name}?` : item.name}</h2>
 			{#if !deleting && item.replenishmentMode === 'AUTOMATIC'}
-				<p>Reposición automática cuando queden {item.lowThreshold} o menos</p>
+				<p>
+					{item.trackingMode === 'STATUS'
+						? 'Reposición automática cuando quede Poco o No hay'
+						: `Reposición automática cuando queden ${item.lowThreshold} o menos`}
+				</p>
 			{/if}
 		</div>
 		<button class="close" type="button" aria-label="Cerrar panel" onclick={onClose}>×</button>
@@ -101,26 +111,37 @@
 			</div>
 		</div>
 	{:else}
-		{#if item.quantityNeedsReview}<p class="review">
-				Cantidad inicial provisional: revisa cuánto queda realmente y guárdalo.
-			</p>{/if}
-		<form
-			onsubmit={(event) => {
-				event.preventDefault();
-				if (validQuantity(quantity)) onQuantityChange(item.id, quantity);
-			}}
-		>
-			<QuantityInput label="Quedan en casa" bind:value={quantity} />
-			<p class="label" aria-live="polite">
-				Estado: {validQuantity(quantity)
-					? statusLabel(quantity, item.lowThreshold)
-					: 'Revisa la cantidad'}
-			</p>
-			<button class="save-quantity" type="submit" disabled={!validQuantity(quantity)}
-				>Guardar cantidad</button
+		{#if item.trackingMode === 'STATUS'}
+			<form
+				onsubmit={(event) => {
+					event.preventDefault();
+					if (changeInventoryStatus(item.id, status)) onClose();
+				}}
 			>
-		</form>
-
+				<StatusInput bind:value={status} />
+				<button class="save-quantity" type="submit">Guardar estado</button>
+			</form>
+		{:else}
+			{#if item.quantityNeedsReview}<p class="review">
+					Cantidad inicial provisional: revisa cuánto queda realmente y guárdalo.
+				</p>{/if}
+			<form
+				onsubmit={(event) => {
+					event.preventDefault();
+					if (validQuantity(quantity)) onQuantityChange(item.id, quantity);
+				}}
+			>
+				<QuantityInput label="Quedan en casa" bind:value={quantity} />
+				<p class="label" aria-live="polite">
+					Estado: {validQuantity(quantity)
+						? statusLabel(quantity, item.lowThreshold)
+						: 'Revisa la cantidad'}
+				</p>
+				<button class="save-quantity" type="submit" disabled={!validQuantity(quantity)}
+					>Guardar cantidad</button
+				>
+			</form>
+		{/if}
 		<div class="actions">
 			<button
 				type="button"

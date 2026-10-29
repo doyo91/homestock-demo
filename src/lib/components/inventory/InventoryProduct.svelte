@@ -30,7 +30,7 @@
 		class="product-button"
 		type="button"
 		aria-haspopup="dialog"
-		aria-label={`Gestionar ${item.name}, ${item.quantity} ${item.quantity === 1 ? 'unidad' : 'unidades'}, ${statusLabel}`}
+		aria-label={`Gestionar ${item.name}, ${item.trackingMode === 'STATUS' ? '' : `${item.quantity} unidades, `}${statusLabel}`}
 		onclick={() => onOpen(item.id)}
 	>
 		<span class="product-info">
@@ -41,7 +41,9 @@
 						class="automatic"
 						role="img"
 						aria-label="Reposición automática"
-						title={`Reposición automática cuando queden ${item.lowThreshold} o menos`}
+						title={item.trackingMode === 'STATUS'
+							? 'Reposición automática cuando quede Poco o No hay'
+							: `Reposición automática cuando queden ${item.lowThreshold} o menos`}
 					>
 						<svg
 							viewBox="0 0 24 24"
@@ -65,8 +67,10 @@
 			class:low={item.status === 'LOW'}
 			class:out={item.status === 'OUT'}
 		>
-			<span class="status-dot" aria-hidden="true"></span>{item.quantity}
-			{item.quantity === 1 ? 'ud.' : 'uds.'} · {statusLabel}
+			<span class="status-dot" aria-hidden="true"
+			></span>{#if item.trackingMode !== 'STATUS'}{item.quantity}
+				{item.quantity === 1 ? 'ud.' : 'uds.'} ·
+			{/if}{statusLabel}
 		</span>
 		<span class="chevron" aria-hidden="true">›</span>
 	</button>

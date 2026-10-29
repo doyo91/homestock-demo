@@ -1,5 +1,6 @@
 import type {
 	InventoryStatus,
+	TrackingMode,
 	ReplenishmentMode,
 	ShoppingItemSource,
 	ShoppingItemStatus
@@ -46,6 +47,7 @@ export interface PrototypeInventoryItem {
 	categoryId: string | null;
 	locationId: string | null;
 	status: InventoryStatus;
+	trackingMode: TrackingMode;
 	quantity: number;
 	lowThreshold: number;
 	packSize?: number | null;
@@ -61,6 +63,8 @@ export interface PrototypeShoppingItem {
 	productId: string | null;
 	quantity: number;
 	purchaseDelta: number | null;
+	note?: string;
+	previousInventoryStatus?: InventoryStatus | null;
 }
 
 export interface PrototypeState {
@@ -105,6 +109,7 @@ export function createPrototypeSeed(): PrototypeState {
 				status: 'LOW',
 				quantity: 1,
 				lowThreshold: 1,
+				trackingMode: 'QUANTITY',
 				quantityNeedsReview: false,
 				active: true,
 				replenishmentMode: 'AUTOMATIC'
@@ -117,6 +122,7 @@ export function createPrototypeSeed(): PrototypeState {
 				status: 'AVAILABLE',
 				quantity: 3,
 				lowThreshold: 1,
+				trackingMode: 'QUANTITY',
 				quantityNeedsReview: false,
 				active: true,
 				replenishmentMode: 'MANUAL'
@@ -129,6 +135,7 @@ export function createPrototypeSeed(): PrototypeState {
 				status: 'OUT',
 				quantity: 0,
 				lowThreshold: 1,
+				trackingMode: 'QUANTITY',
 				quantityNeedsReview: false,
 				active: true,
 				replenishmentMode: 'AUTOMATIC'
@@ -141,6 +148,7 @@ export function createPrototypeSeed(): PrototypeState {
 				status: 'AVAILABLE',
 				quantity: 3,
 				lowThreshold: 1,
+				trackingMode: 'QUANTITY',
 				quantityNeedsReview: false,
 				active: true,
 				replenishmentMode: 'MANUAL'

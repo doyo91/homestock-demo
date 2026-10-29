@@ -1,6 +1,10 @@
 <script lang="ts">
 	import type { PrototypeInventoryItem } from '$lib/prototype/seed';
-	import { getCategoryById, getLocationById } from '$lib/prototype/state.svelte';
+	import {
+		getCategoryById,
+		getLocationById,
+		getPendingInventoryPurchase
+	} from '$lib/prototype/state.svelte';
 	import { getCategoryColor } from '$lib/prototype/seed';
 
 	let {
@@ -11,6 +15,7 @@
 		onOpen: (id: string) => void;
 	} = $props();
 
+	let pendingPurchase = $derived(getPendingInventoryPurchase(item.id));
 	let category = $derived(item.categoryId ? getCategoryById(item.categoryId) : undefined);
 	let categoryName = $derived(category?.name ?? 'Sin categoría');
 	let categoryColor = $derived(category ? getCategoryColor(category.color) : null);
@@ -60,6 +65,7 @@
 				{/if}
 			</span>
 			<span class="product-meta">{locationName} · {categoryName}</span>
+			{#if pendingPurchase}<span class="review">Compra pendiente de incorporar</span>{/if}
 			{#if item.quantityNeedsReview}<span class="review">Revisar cantidad</span>{/if}
 		</span>
 		<span

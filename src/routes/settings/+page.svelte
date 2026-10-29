@@ -111,79 +111,80 @@
 		<details>
 			<summary>Inventario, cantidades y estados</summary>
 			<p>
-				Cada producto tiene una cantidad entera. Al crearlo en inventario empieza en <strong
-					>1</strong
-				>, salvo que indiques otra. Tú decides qué representa cada unidad.
+				Los productos nuevos se gestionan <strong>por estado</strong>: eliges Hay, Poco o No hay sin
+				contar unidades. La cantidad de Compra solo sirve de recordatorio.
 			</p>
 			<p>
-				<strong>No hay</strong> siempre es 0. <strong>Poco</strong> es de 1 hasta el límite del
-				producto (por defecto, 1). Por encima aparece <strong>Hay</strong>. Los estados se calculan
-				automáticamente.
+				Si eliges <strong>por cantidad</strong>, llevas un recuento entero. No hay es 0; Poco es de
+				1 hasta el límite del producto (por defecto, 1); por encima aparece Hay. El estado se
+				calcula automáticamente.
 			</p>
 			<p>
-				Toca una tarjeta para ajustar y guardar cuánto queda, añadir a Compra, editar o eliminar el
-				producto. Puedes ajustar las existencias después de consumir o comprar fuera de la app.
+				Toca una tarjeta para cambiar el estado o la cantidad, añadir a Compra, editar o eliminar.
+				Si tiene una compra pendiente de incorporar, accede a su actualización para confirmar el
+				total real.
 			</p>
 			<p>
-				Guardar y añadir otro conserva categoría y ubicación, vacía el nombre y restablece cantidad
-				1, límite de reposición 1 y reposición Manual. Los filtros activos precargan categoría y
-				ubicación.
+				Puedes cambiar la forma de gestión al editar. Antes debes resolver cualquier compra marcada
+				del producto. Pasar a estado deja de llevar recuento y quita la configuración de packs;
+				pasar a cantidad requiere indicar las existencias reales.
 			</p>
 			<p>
-				Los productos antiguos sin recuento conocido muestran una cantidad provisional y un aviso de
-				revisión. Guarda el recuento real para activar su reposición automática.
-			</p>
-			<p>
-				Eliminar pide confirmación y borra el producto del inventario, de Sugerencias y de Compra,
-				incluidos los comprados. Después puedes reutilizar su nombre.
+				Los productos antiguos sin recuento conocido muestran un aviso de revisión. Eliminar pide
+				confirmación y borra también sus compras pendientes y compradas, incluidas las que faltaban
+				por incorporar.
 			</p>
 		</details>
 		<details>
 			<summary>Reposición automática y sugerencias</summary>
 			<p>
-				El campo <strong>Reponer cuando queden</strong> tiene valor inicial 1. Ese mismo límite define
-				Poco y cuándo reponer: los automáticos se añaden a Compra; los manuales aparecen en Sugerencias,
-				también cuando llegan a 0.
+				Poco y No hay activan la reposición. En modo cantidad, el campo <strong
+					>Reponer cuando queden</strong
+				> determina ese límite. En modo estado, lo decides al cambiar el estado.
 			</p>
 			<p>
-				Los productos en Poco o No hay que aún no están en Compra se muestran en Sugerencias. Al
-				añadirlos puedes indicar cuánto comprar y corregir cuánto queda en casa; la compra aún no se
-				suma. No se duplican productos que ya están en la lista.
-			</p>
-
-			<p>
-				Si ajustas existencias o el límite y dejan de necesitar reposición, se retira su pendiente
-				automático. Los pendientes añadidos manualmente se conservan.
+				Los productos automáticos se añaden a Compra; los manuales aparecen en Sugerencias. No se
+				duplican productos que ya están en Compra o tienen una compra pendiente de incorporar.
 			</p>
 			<p>
-				Quitar un pendiente con la papelera no cambia sus existencias. No se vuelve a añadir
-				automáticamente hasta que cambie el recuento o la configuración; si está en Poco o No hay,
-				se puede añadir desde Sugerencias.
+				Si dejan de necesitar reposición, se retira su pendiente automático. Las líneas añadidas
+				manualmente se conservan. Quitar una línea con la papelera no cambia el inventario.
 			</p>
 		</details>
 		<details>
-			<summary>Comprar, deshacer y finalizar</summary>
+			<summary>Comprar, actualizar inventario y finalizar</summary>
 			<p>
-				Toca un pendiente para confirmar cuánto has comprado. Se suma al inventario. Si ya había
-				existencias, puedes dejar de contar una unidad abierta o casi terminada. El panel muestra el
-				total antes de confirmar.
+				Toca un pendiente para marcarlo comprado con un toque. Los productos por estado pasan a Hay.
+				Los de cantidad mantienen el último recuento confirmado hasta que lo actualices.
 			</p>
 			<p>
-				Un producto nuevo creado desde Compra empieza con 0 en casa, salvo que indiques otra
-				cantidad. Los artículos de solo esta compra tienen cantidad, pero no modifican el
-				inventario.
+				En <strong>Comprados</strong> puedes editar cuánto has comprado sin cambiar existencias, o
+				pulsar <strong>Actualizar</strong>. Confirma las unidades o packs y el
+				<strong>Total actual en casa</strong>: puedes corregir el total previsto si has consumido
+				algo o el recuento anterior no era exacto.
 			</p>
 			<p>
-				Deshacer resta el incremento neto de esa compra y devuelve la línea a Pendientes,
-				conservando otros ajustes posteriores. Si quedasen existencias negativas, tendrás que
-				revisar primero el recuento. Las compras de versiones antiguas requieren revisar la cantidad
-				porque no guardaban ese incremento.
+				Puedes finalizar en el supermercado sin regularizar. Lo que falta pasa a <strong
+					>Actualizar inventario</strong
+				>, debajo de la lista, y se conserva al recargar. Resuélvelo al llegar a casa. Los
+				pendientes de comprar siguen disponibles para otra ocasión.
 			</p>
 			<p>
-				Confirmar o finalizar una compra no genera inmediatamente otra reposición aunque el producto
-				siga bajo mínimos. La reposición se revisa al cambiar después las existencias o el límite.
+				En productos por cantidad que usan packs, puedes anotar el número de packs y confirmar su
+				contenido después. Para tamaños mezclados, introduce directamente el total de unidades. En
+				productos por estado, usa la nota para describir los packs.
 			</p>
-			<p>Finalizar retira los comprados; los pendientes se conservan para otra ocasión.</p>
+			<p>
+				Deshacer antes de actualizar devuelve el artículo a Pendientes sin cambiar el recuento.
+				Después de actualizar, revierte solo la variación aplicada, conservando ajustes posteriores
+				cuando no produce existencias negativas. En productos por estado recupera el estado anterior
+				salvo que lo hayas corregido después.
+			</p>
+			<p>
+				Los artículos de solo esta compra no modifican inventario. Los nuevos guardados desde Compra
+				empiezan por estado. Una compra pendiente de incorporar bloquea otra línea del mismo
+				producto para evitar duplicados; puedes seguir comprando otros artículos.
+			</p>
 		</details>
 		<details>
 			<summary>Categorías, ubicaciones y esta demo</summary>

@@ -32,17 +32,29 @@ Este repositorio contiene únicamente el frontend, la persistencia local, sus pr
 Cada producto permite elegir **Por estado** o **Por cantidad**. Los nuevos productos empiezan por estado; los datos guardados de versiones anteriores mantienen el modo cantidad y sus existencias.
 
 - **Por estado:** se elige Hay, Poco o No hay. No se muestra ni se mantiene un recuento operativo. Poco y No hay activan Sugerencias o la reposición automática, según la configuración del producto. Marcar comprado pasa a Hay con un toque. La cantidad de Compra es un recordatorio independiente.
-- **Por cantidad:** se conserva el recuento, el umbral único de Poco/reposición y la regularización al comprar. El estado es calculado. Los packs convierten su contenido en unidades de inventario.
+- **Por cantidad:** se conserva el recuento, el umbral único de Poco/reposición y la regularización del inventario, que se puede hacer ahora o después. El estado es calculado. Los packs convierten su contenido en unidades de inventario.
 - En Compra se pueden editar la cantidad prevista y una nota opcional, por ejemplo «packs de 12». La nota no realiza conversiones ni modifica inventario.
-- Cambiar a estado descarta el recuento operativo y la configuración de packs. Cambiar a cantidad exige indicar las existencias reales. Si hay una compra marcada sin finalizar, primero debe finalizarse o deshacerse antes de cambiar de modo.
-- Deshacer una compra por estado recupera el estado anterior, salvo que se haya corregido explícitamente después. Finalizar conserva los pendientes y retira los comprados, como hasta ahora.
+- Cambiar a estado descarta el recuento operativo y la configuración de packs. Cambiar a cantidad exige indicar las existencias reales. Si hay una compra pendiente de incorporar, primero debe actualizarse y finalizarse, o deshacerse, antes de cambiar de modo.
+- Deshacer una compra por estado recupera el estado anterior, salvo que se haya corregido explícitamente después. Finalizar conserva los pendientes de comprar y retira los comprados resueltos. Los que aún no se han incorporado al inventario permanecen en una sección independiente.
+
+## Comprar y actualizar el inventario
+
+1. Marca cualquier producto como comprado con un toque. Los de estado pasan a Hay; los de cantidad conservan el último recuento confirmado y muestran **Compra pendiente de incorporar** en inventario.
+2. En **Comprados**, puedes editar la cantidad y nota de compra sin cambiar existencias, o pulsar **Actualizar** para regularizar inmediatamente.
+3. **Finalizar compra** retira lo resuelto y pasa lo que falta a **Actualizar inventario**, debajo de la compra activa. No es necesario regularizar en el supermercado.
+4. Al llegar a casa, confirma lo comprado y el **Total actual en casa**. El total previsto es una ayuda editable: puedes corregirlo por consumo, envases casi vacíos o recuentos antiguos. Se admite un total real de cero.
+5. Si la compra ya estaba finalizada, el pendiente desaparece al actualizar. Si todavía estaba en Comprados, queda resuelta y se retirará al finalizar. Deshacer antes de regularizar no modifica el stock; después revierte solo la variación aplicada, conservando ajustes posteriores cuando no produce existencias negativas.
+
+Los pendientes de inventario sobreviven a la recarga y no vuelven a contarse al finalizar otra compra. Se pueden preparar compras de otros productos mientras tanto. Para mantener una sola línea por producto y evitar duplicados automáticos, hay que resolver la compra pendiente de ese producto antes de añadirlo otra vez. El contador ordinario se sustituye por un acceso a la actualización pendiente para evitar incorporar dos veces la misma compra. Los cambios de nombre, categoría y umbral siguen disponibles.
+
+Las compras guardadas en versiones anteriores ya habían actualizado el inventario: la migración las conserva resueltas y no vuelve a sumarlas.
 
 ## Probar compras en packs
 
 1. Edita Papel higiénico, elige **Por cantidad** y activa **Se compra en packs**.
-2. Indica el tamaño habitual, por ejemplo 6 unidades. La cantidad en casa y el límite de reposición cuentan rollos, no paquetes.
-3. En Compra, al confirmar el producto, indica el número de packs y sus unidades. Con 2 rollos en casa y 2 packs de 6, el total será 14.
-4. Cambia el tamaño a 12 para probar otro formato. Ese cambio afecta solo a esa compra; el tamaño habitual se edita en el producto.
-5. Para formatos mezclados, activa **Introducir el total de unidades**. Puedes deshacer la compra para comprobar que se recupera el stock anterior.
+2. Indica el tamaño habitual, por ejemplo 6 unidades. La cantidad en casa y el umbral siempre cuentan rollos, no paquetes.
+3. En Compra puedes anotar **2 packs**, sin confirmar su contenido. El check no los convierte ni los suma al stock.
+4. Pulsa **Actualizar**, antes o después de finalizar, e indica el tamaño real del pack. Con 2 rollos registrados y 2 packs de 6, el total previsto será 14. Confírmalo o corrígelo según lo que tengas realmente en casa.
+5. Puedes usar otro tamaño, como 12, solo para esa compra. Para packs de tamaños mezclados, selecciona **Unidades** e introduce la suma de su contenido.
 
-Las cantidades pendientes de la lista siguen expresadas en unidades de contenido. El asistente de compra propone suficientes packs del tamaño habitual para cubrirlas y permite ajustar el número antes de confirmar. Activar packs no convierte el stock existente: revisa su cantidad si antes contabas paquetes.
+En productos por estado, los packs pueden describirse en la nota de compra; no realizan conversiones de inventario. Activar packs en un producto por cantidad no convierte automáticamente el stock existente.

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import StatusInput from '../StatusInput.svelte';
-	import { changeInventoryStatus } from '$lib/prototype/state.svelte';
+	import { changeInventoryStatus, getPendingInventoryPurchase } from '$lib/prototype/state.svelte';
 	import { onMount, tick } from 'svelte';
 	import { resolve } from '$app/paths';
 	import type { PrototypeInventoryItem } from '$lib/prototype/seed';
@@ -22,6 +22,7 @@
 		onDelete: (id: string) => void;
 		onClose: () => void;
 	} = $props();
+	let pendingPurchase = $derived(getPendingInventoryPurchase(item.id));
 	let dialog: HTMLDialogElement;
 	let cancelDeleteButton = $state<HTMLButtonElement>();
 	let confirmingDelete = $state(false);
@@ -121,6 +122,13 @@
 				<StatusInput bind:value={status} />
 				<button class="save-quantity" type="submit">Guardar estado</button>
 			</form>
+		{:else if pendingPurchase}
+			<p class="review">
+				Este recuento todavía no incluye la compra. Confirma cuánto tienes ahora para actualizarlo.
+			</p>
+			<a class="pending-link" href={resolve(`/shopping#inventory-update-${pendingPurchase.id}`)}
+				>Actualizar compra pendiente</a
+			>
 		{:else}
 			{#if item.quantityNeedsReview}<p class="review">
 					Cantidad inicial provisional: revisa cuánto queda realmente y guárdalo.
@@ -148,7 +156,11 @@
 				disabled={alreadyInShopping || !validQuantity(quantity)}
 				onclick={() => onAddToShopping(item.id, quantity)}
 			>
-				{alreadyInShopping ? 'Ya está en Compra' : 'Añadir a compra'}
+				{pendingPurchase
+					? 'Compra pendiente de incorporar'
+					: alreadyInShopping
+						? 'Ya está en Compra'
+						: 'Añadir a compra'}
 			</button>
 			<a href={resolve('/products/[id]/edit', { id: item.id })}>Editar producto</a>
 		</div>
@@ -159,6 +171,16 @@
 </dialog>
 
 <style>
+	.pending-link {
+		display: block;
+		padding: 0.75rem;
+		min-height: 2.75rem;
+		border-radius: 0.75rem;
+		background: var(--accent-soft);
+		color: var(--accent);
+		text-align: center;
+		text-decoration: none;
+	}
 	.review {
 		padding: 0.85rem;
 		color: var(--warning);

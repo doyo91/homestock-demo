@@ -54,7 +54,14 @@ export function loadPrototypeState(): PrototypeState {
 		state.shopping = state.shopping.map((item) => ({
 			...item,
 			quantity: validQuantity(item.quantity, 1) ? item.quantity : 1,
-			purchaseDelta: validQuantity(item.purchaseDelta) ? item.purchaseDelta : null
+			purchaseDelta:
+				typeof item.purchaseDelta === 'number' && validQuantity(Math.abs(item.purchaseDelta))
+					? item.purchaseDelta
+					: null,
+			inventoryPending: item.status === 'PURCHASED' && item.inventoryPending === true,
+			finalized:
+				item.status === 'PURCHASED' && item.inventoryPending === true && item.finalized === true,
+			quantityUnit: item.quantityUnit === 'PACKS' ? 'PACKS' : 'UNITS'
 		}));
 		for (const product of state.inventory) {
 			if (

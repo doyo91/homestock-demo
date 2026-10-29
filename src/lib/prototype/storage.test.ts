@@ -5,6 +5,11 @@ import {
 	resetPrototype,
 	getPrototypeState,
 	purchaseShoppingItem,
+	updateProduct,
+	updateShoppingReminder,
+	finalizeShopping,
+	getPendingInventoryUpdates,
+	regularizeShoppingItem,
 	undoShoppingPurchase
 } from './state.svelte';
 import { loadPrototypeState, savePrototypeState } from './storage';
@@ -247,5 +252,76 @@ describe('Persistencia de modos de inventario', () => {
 		Object.assign(state, restored);
 		expect(undoShoppingPurchase(item.id)).toBe(true);
 		expect(loadPrototypeState().inventory[0].status).toBe('LOW');
+	});
+});
+
+describe('Persistencia de compras pendientes de incorporar', () => {
+	it('conserva la compra finalizada y su formato al recargar, y solo suma al confirmar', () => {
+		let stored: string | null = null;
+		vi.stubGlobal('window', {
+			localStorage: {
+				getItem: () => stored,
+				setItem: (_key: string, value: string) => {
+					stored = value;
+				}
+			}
+		});
+		resetPrototype();
+		const state = getPrototypeState();
+		const item = state.shopping.find((item) => item.productId === '1')!;
+		updateProduct('1', 'Leche', 1, null, null, 'AUTOMATIC', 1, 6, 'QUANTITY');
+		updateShoppingReminder(item.id, 2, 'packs grandes', 'PACKS');
+		purchaseShoppingItem(item.id);
+		finalizeShopping();
+		const restored = loadPrototypeState();
+		expect(restored.inventory[0].quantity).toBe(1);
+		expect(restored.shopping.find((candidate) => candidate.id === item.id)).toMatchObject({
+			inventoryPending: true,
+			finalized: true,
+			quantityUnit: 'PACKS',
+			quantity: 2,
+			note: 'packs grandes'
+		});
+		Object.assign(state, restored);
+		expect(getPendingInventoryUpdates()).toHaveLength(1);
+		expect(regularizeShoppingItem(item.id, 25, 2, 12)).toBe(true);
+		expect(loadPrototypeState().inventory[0].quantity).toBe(25);
+		expect(loadPrototypeState().shopping.some((candidate) => candidate.id === item.id)).toBe(false);
+	});
+	it('las compras antiguas ya incorporadas no generan otra actualización al migrar', () => {
+		const legacy = createPrototypeSeed();
+		legacy.inventory[0].quantity = 7;
+		legacy.shopping[0].status = 'PURCHASED';
+		legacy.shopping[0].purchaseDelta = 6;
+		vi.stubGlobal('window', { localStorage: { getItem: () => JSON.stringify(legacy) } });
+		const restored = loadPrototypeState();
+		expect(restored.shopping[0]).toMatchObject({
+			inventoryPending: false,
+			finalized: false,
+			purchaseDelta: 6
+		});
+		expect(restored.inventory[0].quantity).toBe(7);
+	});
+	it('conserva una corrección negativa para poder deshacerla tras recargar', () => {
+		let stored: string | null = null;
+		vi.stubGlobal('window', {
+			localStorage: {
+				getItem: () => stored,
+				setItem: (_key: string, value: string) => {
+					stored = value;
+				}
+			}
+		});
+		resetPrototype();
+		const state = getPrototypeState();
+		state.inventory[0].quantity = 8;
+		const item = state.shopping.find((item) => item.productId === '1')!;
+		purchaseShoppingItem(item.id);
+		regularizeShoppingItem(item.id, 2, 3);
+		const restored = loadPrototypeState();
+		expect(restored.shopping.find((candidate) => candidate.id === item.id)?.purchaseDelta).toBe(-6);
+		Object.assign(state, restored);
+		expect(undoShoppingPurchase(item.id)).toBe(true);
+		expect(loadPrototypeState().inventory[0].quantity).toBe(8);
 	});
 });

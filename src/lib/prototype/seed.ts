@@ -63,6 +63,9 @@ export interface PrototypeShoppingItem {
 	productId: string | null;
 	quantity: number;
 	purchaseDelta: number | null;
+	inventoryPending?: boolean;
+	finalized?: boolean;
+	quantityUnit?: 'UNITS' | 'PACKS';
 	note?: string;
 	previousInventoryStatus?: InventoryStatus | null;
 }

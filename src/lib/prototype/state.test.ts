@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
 	changeInventoryQuantity,
+	getPendingInventoryPurchase,
+	getPendingInventoryUpdates,
+	regularizeShoppingItem,
 	changeInventoryStatus,
 	updateShoppingReminder,
 	removePendingShoppingItem,
@@ -161,7 +164,7 @@ describe('Cantidades, reposición y compra', () => {
 	it('deshacer conserva los ajustes posteriores de inventario', () => {
 		addProductToShopping('1', 2);
 		const item = linked()[0];
-		purchaseShoppingItem(item.id);
+		purchaseShoppingItem(item.id, item.quantity);
 		changeInventoryQuantity('1', 5);
 		expect(undoShoppingPurchase(item.id)).toBe(true);
 		expect(product().quantity).toBe(3);
@@ -171,7 +174,7 @@ describe('Cantidades, reposición y compra', () => {
 	it('impide deshacer si produciría existencias negativas, sin modificar datos', () => {
 		addProductToShopping('1', 3);
 		const item = linked()[0];
-		purchaseShoppingItem(item.id);
+		purchaseShoppingItem(item.id, item.quantity);
 		changeInventoryQuantity('1', 1);
 		const before = JSON.stringify(getPrototypeState());
 		expect(undoShoppingPurchase(item.id)).toBe(false);
@@ -191,7 +194,7 @@ describe('Cantidades, reposición y compra', () => {
 		product().quantityNeedsReview = true;
 		addProductToShopping('1', 2);
 		const item = linked()[0];
-		expect(purchaseShoppingItem(item.id)).toBe(false);
+		expect(purchaseShoppingItem(item.id, 2)).toBe(false);
 		expect(purchaseShoppingItem(item.id, 2, false, 4)).toBe(true);
 		expect(product()).toMatchObject({ quantity: 6, quantityNeedsReview: false });
 		undoShoppingPurchase(item.id);
@@ -215,7 +218,7 @@ describe('Cantidades, reposición y compra', () => {
 		const id = saveShoppingItemAsProduct('Arroz', 3)!;
 		const state = getPrototypeState();
 		expect(state.inventory.find((item) => item.id === id)?.quantity).toBe(0);
-		purchaseShoppingItem(state.shopping.find((item) => item.productId === id)!.id);
+		purchaseShoppingItem(state.shopping.find((item) => item.productId === id)!.id, 3);
 		expect(state.inventory.find((item) => item.id === id)?.quantity).toBe(3);
 		const second = saveShoppingItemAsProduct('Lentejas', 2, 4)!;
 		expect(state.inventory.find((item) => item.id === second)?.quantity).toBe(4);
@@ -864,5 +867,179 @@ describe('Gestión por estado y convivencia con cantidades', () => {
 			status: 'LOW'
 		});
 		expect(linkedTo(id)[0]).toMatchObject({ quantity: 2, note: 'molido' });
+	});
+});
+
+describe('Compra rápida y actualización diferida de inventario', () => {
+	beforeEach(() => resetPrototype());
+	const milk = () => getPrototypeState().inventory.find((item) => item.id === '1')!;
+	const purchase = () => getPrototypeState().shopping.find((item) => item.productId === '1')!;
+	it('el check conserva recuento y estado, y no obliga a conocer las existencias', () => {
+		milk().quantityNeedsReview = true;
+		const before = { quantity: milk().quantity, status: milk().status };
+		expect(purchaseShoppingItem(purchase().id)).toBe(true);
+		expect(milk()).toMatchObject({ ...before, quantityNeedsReview: true });
+		expect(purchase()).toMatchObject({
+			status: 'PURCHASED',
+			inventoryPending: true,
+			purchaseDelta: null
+		});
+		expect(getPendingInventoryPurchase('1')?.id).toBe(purchase().id);
+		expect(purchaseShoppingItem(purchase().id)).toBe(false);
+	});
+	it('finaliza sin perder pendientes de inventario, y una segunda finalización no los cuenta otra vez', () => {
+		purchaseShoppingItem(purchase().id);
+		expect(finalizeShopping()).toBe(1);
+		expect(purchase()).toMatchObject({
+			status: 'PURCHASED',
+			inventoryPending: true,
+			finalized: true
+		});
+		expect(getPendingInventoryUpdates()).toHaveLength(1);
+		expect(finalizeShopping()).toBe(0);
+		expect(getPrototypeState().shopping.filter((item) => item.status === 'PENDING')).toHaveLength(
+			2
+		);
+		expect(getPendingInventoryUpdates()).toHaveLength(1);
+	});
+	it('permite seguir comprando otros artículos y no duplica la reposición mientras falta incorporar', () => {
+		purchaseShoppingItem(purchase().id);
+		finalizeShopping();
+		expect(getShoppingSuggestions().some((item) => item.id === '1')).toBe(false);
+		expect(addProductToShopping('1')).toBe(false);
+		expect(addProductToShopping('2', 3)).toBe(true);
+		expect(addOneOffShoppingItem('Fruta', 2)).toBe(true);
+		const bread = getPrototypeState().shopping.find((item) => item.name === 'Pan')!;
+		purchaseShoppingItem(bread.id);
+		expect(finalizeShopping()).toBe(1);
+		expect(getPendingInventoryUpdates()).toHaveLength(1);
+		expect(
+			getPrototypeState().shopping.some(
+				(item) => item.productId === '2' && item.status === 'PENDING'
+			)
+		).toBe(true);
+	});
+	it('actualiza ahora y permite deshacer solo la aportación manteniendo correcciones posteriores', () => {
+		const id = purchase().id;
+		purchaseShoppingItem(id);
+		expect(regularizeShoppingItem(id, 7, 6)).toBe(true);
+		expect(milk()).toMatchObject({ quantity: 7, status: 'AVAILABLE', quantityNeedsReview: false });
+		expect(purchase()).toMatchObject({ quantity: 6, purchaseDelta: 6, inventoryPending: false });
+		expect(regularizeShoppingItem(id, 13, 6)).toBe(false);
+		changeInventoryQuantity('1', 8);
+		expect(undoShoppingPurchase(id)).toBe(true);
+		expect(milk().quantity).toBe(2);
+	});
+	it('actualiza después de finalizar y retira el pendiente exactamente una vez', () => {
+		const id = purchase().id;
+		purchaseShoppingItem(id);
+		finalizeShopping();
+		expect(regularizeShoppingItem(id, 9, 6)).toBe(true);
+		expect(milk().quantity).toBe(9);
+		expect(getPendingInventoryUpdates()).toHaveLength(0);
+		expect(getPendingInventoryPurchase('1')).toBeUndefined();
+		expect(getPrototypeState().shopping.some((item) => item.id === id)).toBe(false);
+		expect(regularizeShoppingItem(id, 15, 6)).toBe(false);
+		expect(milk().quantity).toBe(9);
+		expect(addProductToShopping('1')).toBe(true);
+	});
+	it.each([false, true])(
+		'deshacer sin regularizar conserva el recuento, con finalizada=%s',
+		(finalized) => {
+			const id = purchase().id;
+			purchaseShoppingItem(id);
+			if (finalized) finalizeShopping();
+			expect(undoShoppingPurchase(id)).toBe(true);
+			expect(purchase()).toMatchObject({
+				status: 'PENDING',
+				inventoryPending: false,
+				finalized: false,
+				purchaseDelta: null
+			});
+			expect(milk()).toMatchObject({ quantity: 1, status: 'LOW', quantityNeedsReview: false });
+			expect(getPendingInventoryUpdates()).toHaveLength(0);
+		}
+	);
+	it('acepta un total real menor al anterior, incluso cero, y deshace la corrección', () => {
+		milk().quantity = 8;
+		const id = purchase().id;
+		purchaseShoppingItem(id);
+		expect(regularizeShoppingItem(id, 0, 3)).toBe(true);
+		expect(milk()).toMatchObject({ quantity: 0, status: 'OUT' });
+		expect(purchase().purchaseDelta).toBe(-8);
+		expect(undoShoppingPurchase(id)).toBe(true);
+		expect(milk().quantity).toBe(8);
+	});
+	it('anota packs, edita lo comprado sin incorporar y confirma su contenido después', () => {
+		const product = getPrototypeState().inventory.find((item) => item.id === '3')!;
+		updateProduct(product.id, product.name, 2, null, null, 'AUTOMATIC', 1, 6, 'QUANTITY');
+		expect(addProductToShopping(product.id, 2, undefined, 'pack habitual', 'PACKS')).toBe(true);
+		const item = getPrototypeState().shopping.find((item) => item.productId === product.id)!;
+		purchaseShoppingItem(item.id);
+		expect(updateShoppingReminder(item.id, 3, 'packs de 12', 'PACKS')).toBe(true);
+		expect(product.quantity).toBe(2);
+		expect(item).toMatchObject({ quantity: 3, quantityUnit: 'PACKS', inventoryPending: true });
+		finalizeShopping();
+		expect(regularizeShoppingItem(item.id, 38, 3, 12)).toBe(true);
+		expect(product.quantity).toBe(38);
+		expect(getPendingInventoryUpdates()).toHaveLength(0);
+	});
+	it('mantiene pendientes si se corrige metadata y obliga a resolverlos antes de cambiar modo o recuento', () => {
+		const id = purchase().id;
+		purchaseShoppingItem(id);
+		finalizeShopping();
+		expect(changeInventoryQuantity('1', 5)).toBe(false);
+		expect(updateProduct('1', 'Leche', 0, null, null, 'AUTOMATIC', 1, null, 'STATUS', 'LOW')).toBe(
+			false
+		);
+		expect(updateProduct('1', 'Leche', 5, null, null, 'AUTOMATIC')).toBe(false);
+		expect(updateProduct('1', 'Leche entera', 1, null, null, 'AUTOMATIC', 2)).toBe(true);
+		expect(getPendingInventoryPurchase('1')).toMatchObject({
+			name: 'Leche entera',
+			finalized: true
+		});
+		expect(milk().quantity).toBe(1);
+	});
+	it('los productos por estado y los puntuales no requieren regularización', () => {
+		const id = createProduct('Jabón', 0, null, null, 'MANUAL', 1, null, 'STATUS', 'OUT')!;
+		addProductToShopping(id, 2);
+		const item = getPrototypeState().shopping.find((item) => item.productId === id)!;
+		purchaseShoppingItem(item.id);
+		expect(getPrototypeState().inventory.find((item) => item.id === id)?.status).toBe('AVAILABLE');
+		expect(getPendingInventoryPurchase(id)).toBeUndefined();
+		expect(regularizeShoppingItem(item.id, 5, 2)).toBe(false);
+		const bread = getPrototypeState().shopping.find((item) => item.name === 'Pan')!;
+		purchaseShoppingItem(bread.id);
+		expect(finalizeShopping()).toBe(2);
+		expect(getPendingInventoryUpdates()).toHaveLength(0);
+	});
+	it('valida cantidades y conversiones de forma atómica antes de resolver un pendiente', () => {
+		const id = purchase().id;
+		expect(regularizeShoppingItem(id, 5, 4)).toBe(false);
+		purchaseShoppingItem(id);
+		const before = JSON.stringify(getPrototypeState());
+		for (const invalid of [-1, 1.5, NaN, Infinity, 1000000]) {
+			expect(regularizeShoppingItem(id, invalid, 1)).toBe(false);
+			expect(regularizeShoppingItem(id, 5, invalid)).toBe(false);
+			expect(regularizeShoppingItem(id, 5, 1, invalid)).toBe(false);
+		}
+		expect(regularizeShoppingItem(id, 5, 0)).toBe(false);
+		expect(regularizeShoppingItem(id, 5, 999999, 6)).toBe(false);
+		expect(JSON.stringify(getPrototypeState())).toBe(before);
+	});
+	it('eliminar un producto limpia también su compra finalizada pendiente de incorporar', () => {
+		purchaseShoppingItem(purchase().id);
+		finalizeShopping();
+		expect(deleteProduct('1')).toBe(true);
+		expect(getPendingInventoryUpdates()).toHaveLength(0);
+	});
+	it('no repone inmediatamente tras confirmar una compra que sigue bajo el umbral', () => {
+		const id = purchase().id;
+		purchaseShoppingItem(id);
+		finalizeShopping();
+		expect(regularizeShoppingItem(id, 0, 1)).toBe(true);
+		expect(getPrototypeState().shopping.some((item) => item.productId === '1')).toBe(false);
+		expect(changeInventoryQuantity('1', 1)).toBe(true);
+		expect(getPrototypeState().shopping.filter((item) => item.productId === '1')).toHaveLength(1);
 	});
 });

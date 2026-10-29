@@ -4,7 +4,12 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import ProductForm from '$lib/components/ProductForm.svelte';
-	import { getProductById, getPrototypeState, updateProduct } from '$lib/prototype/state.svelte';
+	import {
+		getProductById,
+		getPrototypeState,
+		getPendingInventoryPurchase,
+		updateProduct
+	} from '$lib/prototype/state.svelte';
 
 	const productId = page.params.id;
 
@@ -103,6 +108,7 @@
 			modeChangeLocked={getPrototypeState().shopping.some(
 				(item) => item.productId === product.id && item.status === 'PURCHASED'
 			)}
+			inventoryUpdatePending={!!getPendingInventoryPurchase(product.id)}
 			submitLabel="Guardar cambios"
 			onsubmit={saveProduct}
 		/>

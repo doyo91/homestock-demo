@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { createFeedback } from '$lib/prototype/feedback.svelte';
+	import InventoryRegularizationPanel from '$lib/components/InventoryRegularizationPanel.svelte';
 	import ShoppingQuantityPanel from '$lib/components/ShoppingQuantityPanel.svelte';
 	import { resolve } from '$app/paths';
 	import {
 		finalizeShopping as finalizePrototypeShopping,
 		getPrototypeState,
 		getShoppingSuggestions,
+		getPendingInventoryUpdates,
 		getLocationById,
 		removePendingShoppingItem,
 		purchaseShoppingItem,
@@ -45,14 +47,14 @@
 
 	let pending = $derived(shopping.filter((item) => item.status === 'PENDING'));
 
-	let purchased = $derived(shopping.filter((item) => item.status === 'PURCHASED'));
+	let purchased = $derived(
+		shopping.filter((item) => item.status === 'PURCHASED' && !item.finalized)
+	);
+	let inventoryUpdates = $derived(getPendingInventoryUpdates());
+	let unconfirmedCount = $derived(purchased.filter((item) => item.inventoryPending).length);
 
 	function markAsPurchased(id: string) {
-		const item = shopping.find((candidate) => candidate.id === id);
-		const product = prototypeState.inventory.find((candidate) => candidate.id === item?.productId);
-		if (product?.trackingMode === 'STATUS' || !item?.productId) {
-			if (!purchaseShoppingItem(id)) feedback.show('No se ha podido confirmar la compra.', true);
-		} else purchaseId = id;
+		if (!purchaseShoppingItem(id)) feedback.show('No se ha podido confirmar la compra.', true);
 	}
 
 	function undoPurchase(id: string) {
@@ -180,7 +182,13 @@
 
 					<span class="item-name">
 						{item.name} · {item.quantity}
-						{item.quantity === 1 ? 'ud.' : 'uds.'}
+						{item.quantityUnit === 'PACKS'
+							? item.quantity === 1
+								? 'pack'
+								: 'packs'
+							: item.quantity === 1
+								? 'ud.'
+								: 'uds.'}
 						{#if item.note}<small class="item-note">{item.note}</small>{/if}
 					</span>
 				</button>
@@ -274,26 +282,91 @@
 			</div>
 
 			{#each purchased as item (item.id)}
-				<div class="shopping-row purchased-row">
+				<div class="shopping-row purchased-row" id={`inventory-update-${item.id}`}>
 					<div class="purchased-item">
 						<span class="check checked" aria-hidden="true"> ✓ </span>
 
-						<span class="item-name">
-							{item.name} · {item.quantity}
-							{item.quantity === 1 ? 'ud.' : 'uds.'}
-							{#if item.note}<small class="item-note">{item.note}</small>{/if}
+						<span class="item-name"
+							><span class="purchased-name">
+								{item.name} · {item.quantity}
+								{item.quantityUnit === 'PACKS'
+									? item.quantity === 1
+										? 'pack'
+										: 'packs'
+									: item.quantity === 1
+										? 'ud.'
+										: 'uds.'}
+							</span>{#if item.note}<small class="item-note">{item.note}</small>{/if}
+							{#if item.inventoryPending}<button
+									class="edit-purchased"
+									type="button"
+									aria-label={`Editar cantidad y nota de ${item.name}`}
+									onclick={() => (editId = item.id)}>Editar compra</button
+								>{/if}
 						</span>
 					</div>
 
+					{#if item.inventoryPending}<button
+							class="reminder-button"
+							type="button"
+							aria-label={`Actualizar inventario de ${item.name}`}
+							onclick={() => (purchaseId = item.id)}>Actualizar</button
+						>{/if}
 					<button class="undo-button" type="button" onclick={() => undoPurchase(item.id)}>
 						Deshacer
 					</button>
 				</div>
 			{/each}
 
+			{#if unconfirmedCount > 0}<p class="inventory-notice">
+					Puedes finalizar ahora. {unconfirmedCount}
+					{unconfirmedCount === 1 ? 'producto quedará pendiente' : 'productos quedarán pendientes'} de
+					actualizar en casa.
+				</p>{/if}
 			<button class="finish-button" type="button" onclick={requestFinish}>
 				Finalizar compra
 			</button>
+		</section>
+	{/if}
+
+	{#if inventoryUpdates.length > 0}
+		<section
+			class="group inventory-updates"
+			id="inventory-updates"
+			aria-labelledby="inventory-updates-title"
+		>
+			<div class="section-heading">
+				<h2 id="inventory-updates-title">Actualizar inventario</h2>
+				<span>{inventoryUpdates.length}</span>
+			</div>
+			<p class="inventory-notice">
+				Ya lo has comprado. Confirma las cantidades cuando llegues a casa; puedes seguir preparando
+				la próxima compra.
+			</p>
+			{#each inventoryUpdates as item (item.id)}
+				<div class="shopping-row update-row" id={`inventory-update-${item.id}`}>
+					<div class="update-info">
+						<strong>{item.name}</strong><small
+							>{item.quantity}
+							{item.quantityUnit === 'PACKS' ? 'packs anotados' : 'uds. anotadas'}{item.note
+								? ` · ${item.note}`
+								: ''}</small
+						>
+					</div>
+					<button
+						class="reminder-button"
+						type="button"
+						aria-label={`Actualizar inventario de ${item.name}`}
+						onclick={() => (purchaseId = item.id)}>Actualizar</button
+					>
+					<button
+						class="undo-button"
+						type="button"
+						aria-label={`Deshacer compra de ${item.name}`}
+						onclick={() => undoPurchase(item.id)}>Deshacer</button
+					>
+				</div>
+			{/each}
 		</section>
 	{/if}
 
@@ -325,14 +398,14 @@
 	{/if}
 </section>
 
-{#if purchaseItem}
-	<ShoppingQuantityPanel
+{#if purchaseItem && purchaseProduct}
+	<InventoryRegularizationPanel
 		item={purchaseItem}
 		product={purchaseProduct}
 		onClose={() => (purchaseId = null)}
 		onSaved={() => {
 			purchaseId = null;
-			feedback.show('Compra registrada.');
+			feedback.show('Inventario actualizado.');
 		}}
 	/>
 {/if}
@@ -358,6 +431,47 @@
 {/if}
 
 <style>
+	.purchased-row,
+	.update-row {
+		scroll-margin-top: 1rem;
+	}
+	.purchased-row .undo-button,
+	.update-row .undo-button {
+		min-height: 2.75rem;
+	}
+	.edit-purchased {
+		display: block;
+		min-height: 2.75rem;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: var(--accent);
+		font: inherit;
+		font-size: 0.8rem;
+		cursor: pointer;
+	}
+	.inventory-notice {
+		color: var(--muted);
+		font-size: 0.875rem;
+		line-height: 1.5;
+	}
+	.inventory-updates {
+		scroll-margin-top: 1rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--line);
+	}
+	.update-info {
+		flex: 1;
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+	.update-info small {
+		display: block;
+		margin-top: 0.25rem;
+		color: var(--muted);
+		font-size: 0.8rem;
+	}
+
 	.item-note {
 		display: block;
 		color: var(--muted);
@@ -619,6 +733,10 @@
 
 	.purchased-item .item-name {
 		color: var(--muted);
+		overflow-wrap: anywhere;
+	}
+
+	.purchased-name {
 		text-decoration: line-through;
 	}
 

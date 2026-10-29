@@ -23,6 +23,7 @@
 		submitLabel?: string;
 		allowAddAnother?: boolean;
 		modeChangeLocked?: boolean;
+		inventoryUpdatePending?: boolean;
 		onsubmit: (value: ProductFormValue, addAnother: boolean) => boolean | void;
 	}
 
@@ -31,6 +32,7 @@
 		submitLabel = 'Guardar producto',
 		allowAddAnother = false,
 		modeChangeLocked = false,
+		inventoryUpdatePending = false,
 		onsubmit
 	}: Props = $props();
 
@@ -126,7 +128,8 @@
 		></label
 	>
 	{#if modeChangeLocked}<p class="quantity-status">
-			Finaliza o deshaz la compra de este producto antes de cambiar su forma de gestión.
+			Resuelve la compra de este producto antes de cambiar su forma de gestión: actualiza el
+			inventario y finaliza, o deshaz la compra.
 		</p>{/if}
 	{#if trackingMode === 'STATUS'}
 		<StatusInput bind:value={status} />
@@ -137,7 +140,11 @@
 		</p>
 	{:else}
 		<div>
-			<QuantityInput label="Cantidad en casa" bind:value={quantity} />
+			{#if inventoryUpdatePending}<p class="quantity-status">
+					Compra pendiente de incorporar. Actualiza las existencias desde Compra; aquí puedes editar
+					los demás datos.
+				</p>
+			{:else}<QuantityInput label="Cantidad en casa" bind:value={quantity} />{/if}
 			{#if getInitialValue().trackingMode === 'STATUS'}<p class="quantity-status">
 					Introduce cuánto queda realmente. El estado se calculará con esta cantidad.
 				</p>{/if}

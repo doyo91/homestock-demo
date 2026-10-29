@@ -11,6 +11,7 @@
 		getPrototypeState,
 		getCategoryById,
 		getLocationById,
+		getPendingInventoryPurchase,
 		saveShoppingItemAsProduct
 	} from '$lib/prototype/state.svelte';
 
@@ -30,6 +31,7 @@
 
 	let query = $state('');
 	let quantity = $state(1);
+	let quantityUnit = $state<'UNITS' | 'PACKS'>('UNITS');
 	let note = $state('');
 	let status = $state<InventoryStatus>('OUT');
 	let existingQuantity = $state(0);
@@ -74,6 +76,7 @@
 		}
 
 		selectedProductId = id;
+		quantityUnit = 'UNITS';
 		existingQuantity = product.quantity;
 		query = product.name;
 		error = null;
@@ -82,6 +85,7 @@
 	function updateQuery(value: string) {
 		query = value;
 		selectedProductId = null;
+		quantityUnit = 'UNITS';
 		existingQuantity = 0;
 		error = null;
 	}
@@ -95,7 +99,8 @@
 			selectedProduct.id,
 			quantity,
 			selectedProduct.trackingMode === 'STATUS' ? undefined : existingQuantity,
-			note
+			note,
+			quantityUnit
 		);
 
 		if (!added) {
@@ -176,7 +181,17 @@
 	</div>
 
 	{#if normalizedQuery.length > 0}
-		<QuantityInput label="Cantidad a comprar" bind:value={quantity} min={1} />
+		{#if selectedProduct?.trackingMode === 'QUANTITY' && selectedProduct.packSize}<label
+				class="note"
+				>Cantidad en<select bind:value={quantityUnit}
+					><option value="UNITS">Unidades</option><option value="PACKS">Packs</option></select
+				></label
+			>{/if}
+		<QuantityInput
+			label={quantityUnit === 'PACKS' ? 'Número de packs' : 'Cantidad a comprar'}
+			bind:value={quantity}
+			min={1}
+		/>
 		<label class="note"
 			>Nota opcional<input type="text" bind:value={note} placeholder="Ej. packs de 12" /></label
 		>
@@ -207,18 +222,22 @@
 				<span class="selected-mark" aria-hidden="true">✓</span>
 			</div>
 
-			{#if selectedProduct.trackingMode !== 'STATUS'}
+			{#if selectedProduct.trackingMode !== 'STATUS' && !getPendingInventoryPurchase(selectedProduct.id)}
 				{#if selectedProduct.quantityNeedsReview}<p class="hint">
 						Revisa el recuento: la cantidad anterior era provisional.
 					</p>{/if}
 				<QuantityInput label="Quedan en casa" bind:value={existingQuantity} />
 				<p class="hint">
-					Se guardará esta cantidad. La compra se sumará al marcarla como comprada.
+					Se guardará este recuento. La compra se incorporará cuando actualices el inventario.
 				</p>
 			{/if}
 
 			{#if selectedProductAlreadyInShopping}
-				<p class="already-added">Este producto ya está en Compra.</p>
+				<p class="already-added">
+					{getPendingInventoryPurchase(selectedProduct.id)
+						? 'Este producto tiene una compra pendiente de incorporar. Actualízala antes de añadir otra.'
+						: 'Este producto ya está en Compra.'}
+				</p>
 			{/if}
 
 			<button
@@ -314,7 +333,8 @@
 		margin: 1rem 0;
 		font-size: 0.875rem;
 	}
-	.note input {
+	.note input,
+	.note select {
 		min-height: 2.75rem;
 		padding: 0.6rem;
 		border: 1px solid var(--line);

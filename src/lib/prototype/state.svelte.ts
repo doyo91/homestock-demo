@@ -19,6 +19,51 @@ export function getShoppingSuggestions() {
 	);
 }
 
+export function getPendingInventoryPurchase(productId: string) {
+	return state.shopping.find(
+		(item) => item.productId === productId && item.status === 'PURCHASED' && item.inventoryPending
+	);
+}
+
+export function getPendingInventoryUpdates() {
+	return state.shopping.filter(
+		(item) => item.status === 'PURCHASED' && item.inventoryPending && item.finalized
+	);
+}
+
+export function regularizeShoppingItem(
+	id: string,
+	finalQuantity: number,
+	quantity: number,
+	packSize?: number
+): boolean {
+	const item = state.shopping.find((candidate) => candidate.id === id);
+	if (!item || item.status !== 'PURCHASED' || !item.inventoryPending || !item.productId)
+		return false;
+	const product = getProductById(item.productId);
+	const bought = quantity * (packSize ?? 1);
+	if (
+		!product?.active ||
+		product.trackingMode !== 'QUANTITY' ||
+		!validQuantity(finalQuantity) ||
+		!validQuantity(quantity, 1) ||
+		!validQuantity(bought, 1) ||
+		(packSize !== undefined && !validQuantity(packSize, 1))
+	)
+		return false;
+	// An explicit final count also covers consumption and corrections since the supermarket.
+	item.purchaseDelta = finalQuantity - product.quantity;
+	item.quantity = bought;
+	item.quantityUnit = 'UNITS';
+	item.inventoryPending = false;
+	product.quantity = finalQuantity;
+	product.quantityNeedsReview = false;
+	product.status = inventoryStatus(finalQuantity, product.lowThreshold);
+	if (item.finalized) state.shopping = state.shopping.filter((candidate) => candidate.id !== id);
+	persistPrototypeState();
+	return true;
+}
+
 export function getActiveCategories() {
 	return state.categories.filter((category) => category.active);
 }
@@ -92,11 +137,28 @@ export function changeInventoryStatus(productId: string, status: InventoryStatus
 	return true;
 }
 
-export function updateShoppingReminder(id: string, quantity: number, note: string): boolean {
+export function updateShoppingReminder(
+	id: string,
+	quantity: number,
+	note: string,
+	quantityUnit: 'UNITS' | 'PACKS' = 'UNITS'
+): boolean {
 	const item = state.shopping.find(
-		(candidate) => candidate.id === id && candidate.status === 'PENDING'
+		(candidate) =>
+			candidate.id === id &&
+			(candidate.status === 'PENDING' ||
+				(candidate.status === 'PURCHASED' && candidate.inventoryPending))
 	);
-	if (!item || !validQuantity(quantity, 1)) return false;
+	if (!item || !validQuantity(quantity, 1) || !['UNITS', 'PACKS'].includes(quantityUnit))
+		return false;
+	const product = item.productId ? getProductById(item.productId) : undefined;
+	if (
+		quantityUnit === 'PACKS' &&
+		item.quantityUnit !== 'PACKS' &&
+		(product?.trackingMode !== 'QUANTITY' || !product.packSize)
+	)
+		return false;
+	item.quantityUnit = quantityUnit;
 	item.quantity = quantity;
 	item.note = note.trim();
 	persistPrototypeState();
@@ -120,7 +182,12 @@ function syncAutomaticShopping(product: PrototypeInventoryItem): void {
 
 export function changeInventoryQuantity(productId: string, quantity: number): boolean {
 	const product = getProductById(productId);
-	if (!product?.active || product.trackingMode === 'STATUS' || !validQuantity(quantity))
+	if (
+		!product?.active ||
+		product.trackingMode === 'STATUS' ||
+		getPendingInventoryPurchase(productId) ||
+		!validQuantity(quantity)
+	)
 		return false;
 	const changed = quantity !== product.quantity || product.quantityNeedsReview;
 	product.quantity = quantity;
@@ -135,7 +202,8 @@ export function addProductToShopping(
 	productId: string,
 	quantity = 1,
 	existingQuantity?: number,
-	note = ''
+	note = '',
+	quantityUnit: 'UNITS' | 'PACKS' = 'UNITS'
 ): boolean {
 	const product = getProductById(productId);
 	if (
@@ -145,13 +213,22 @@ export function addProductToShopping(
 		state.shopping.some((item) => item.productId === productId)
 	)
 		return false;
+	if (
+		!['UNITS', 'PACKS'].includes(quantityUnit) ||
+		(quantityUnit === 'PACKS' && (product.trackingMode !== 'QUANTITY' || !product.packSize))
+	)
+		return false;
 	if (existingQuantity !== undefined && product.trackingMode !== 'STATUS') {
 		product.quantity = existingQuantity;
 		product.quantityNeedsReview = false;
 		product.status = inventoryStatus(existingQuantity, product.lowThreshold);
 	}
 	// Insert atomically with the stock correction: no second automatic entry.
-	state.shopping.push({ ...shoppingEntry(product, 'MANUAL', quantity), note: note.trim() });
+	state.shopping.push({
+		...shoppingEntry(product, 'MANUAL', quantity),
+		note: note.trim(),
+		quantityUnit
+	});
 	persistPrototypeState();
 	return true;
 }
@@ -222,6 +299,23 @@ export function purchaseShoppingItem(
 ): boolean {
 	const item = state.shopping.find((candidate) => candidate.id === id);
 	if (!item || item.status !== 'PENDING') return false;
+	const product = item.productId ? getProductById(item.productId) : undefined;
+	if (item.productId && !product?.active) return false;
+	// A plain check records the purchase without assuming how many units arrived home.
+	if (
+		product?.trackingMode === 'QUANTITY' &&
+		quantity === undefined &&
+		existingQuantity === undefined &&
+		packSize === undefined &&
+		!discountExisting
+	) {
+		item.status = 'PURCHASED';
+		item.inventoryPending = true;
+		item.finalized = false;
+		item.purchaseDelta = null;
+		persistPrototypeState();
+		return true;
+	}
 	if (packSize !== undefined && !validQuantity(packSize, 1)) return false;
 	const bought = (quantity ?? item.quantity) * (packSize ?? 1);
 	if (packSize !== undefined && (!item.productId || !getProductById(item.productId)?.packSize))
@@ -256,6 +350,9 @@ export function purchaseShoppingItem(
 	} else if (discountExisting || existingQuantity !== undefined) return false;
 	item.quantity = bought;
 	item.purchaseDelta = delta;
+	item.inventoryPending = false;
+	item.finalized = false;
+	item.quantityUnit = product?.trackingMode === 'STATUS' ? (item.quantityUnit ?? 'UNITS') : 'UNITS';
 	item.status = 'PURCHASED';
 	persistPrototypeState();
 	return true;
@@ -268,7 +365,9 @@ export function undoShoppingPurchase(id: string): boolean {
 		const product = getProductById(item.productId);
 		if (!product?.active) return false;
 		// Reverse only this purchase's contribution, preserving later stock edits.
-		if (product.trackingMode === 'STATUS') {
+		if (item.inventoryPending) {
+			// Stock has not changed, so there is no numeric contribution to reverse.
+		} else if (product.trackingMode === 'STATUS') {
 			if (item.previousInventoryStatus) product.status = item.previousInventoryStatus;
 		} else if (item.purchaseDelta !== null) {
 			const total = product.quantity - item.purchaseDelta;
@@ -281,6 +380,8 @@ export function undoShoppingPurchase(id: string): boolean {
 		}
 	}
 	item.previousInventoryStatus = null;
+	item.inventoryPending = false;
+	item.finalized = false;
 	item.status = 'PENDING';
 	item.purchaseDelta = null;
 	persistPrototypeState();
@@ -296,9 +397,18 @@ export function removePendingShoppingItem(id: string): boolean {
 }
 
 export function finalizeShopping(): number {
-	const count = state.shopping.filter((item) => item.status === 'PURCHASED').length;
+	const count = state.shopping.filter(
+		(item) => item.status === 'PURCHASED' && !item.finalized
+	).length;
 	if (count > 0) {
-		state.shopping = state.shopping.filter((item) => item.status !== 'PURCHASED');
+		state.shopping = state.shopping.filter((item) => {
+			if (item.status !== 'PURCHASED') return true;
+			if (item.inventoryPending) {
+				item.finalized = true;
+				return true;
+			}
+			return false;
+		});
 		persistPrototypeState();
 	}
 	return count;
@@ -378,6 +488,7 @@ export function updateProduct(
 	)
 		return false;
 	const modeChanged = (product.trackingMode ?? 'QUANTITY') !== trackingMode;
+	if (getPendingInventoryPurchase(productId) && quantity !== product.quantity) return false;
 	if (
 		modeChanged &&
 		state.shopping.some((item) => item.productId === productId && item.status === 'PURCHASED')

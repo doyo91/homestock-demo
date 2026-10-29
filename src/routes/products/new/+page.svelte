@@ -55,10 +55,7 @@
 			}
 			return true;
 		} else {
-			feedback.show(
-				'No se ha podido guardar. Revisa el nombre y finaliza o deshaz la compra antes de cambiar el modo.',
-				true
-			);
+			feedback.show('No se ha podido guardar. Revisa el nombre y los datos del producto.', true);
 			return false;
 		}
 	}
